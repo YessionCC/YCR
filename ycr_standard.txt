@@ -1,0 +1,9 @@
+1. Every space three vector must be normalized
+2. Ray direction must be normalized
+3. In tangent space, the direction of incident ray and exitant ray must 
+  point to the same side with normal when bxdf is reflect or the opposite
+  side with normal if transmission
+4. In tangent space, (x, y, z)->(tangent, btangent, normal)
+5. Rotation and scale are both related to the world origin
+6. Btangent = cross(tangent, normal)
+7. In Custom Primitive, tangent is along the u
