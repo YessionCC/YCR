@@ -57,6 +57,13 @@ void PathIntegrator::render(RayGenerator& rayGen, Scene& scene, Film& film) {
   auto& pathVtxs = subPathGenerator.getPathVtxs();
   while(rayGen.genNextRay(ray, rasPos)) {
 
+    // if((int)rasPos.x == 161 && (int)rasPos.y == 520) {
+    //   int c = 1;
+    // }
+    // if((int)rasPos.x == 523 && (int)rasPos.y == 521) {
+    //   int c = 1;
+    // }
+
     subPathGenerator.clear();
 
     //__StartTimeAnalyse__("subpath")
@@ -122,7 +129,8 @@ void PathIntegrator::render(RayGenerator& rayGen, Scene& scene, Film& film) {
     }
     //__EndTimeAnalyse__
 
-    film.addRadiance(radiance, 1, rasPos.x, rasPos.y);
+    //film.addRadiance(radiance, 1, rasPos.x, rasPos.y);
+    film.addSplat(radiance, rasPos);
   }
   rayGen.clear();
 }

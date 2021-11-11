@@ -51,7 +51,7 @@ public:
 class PathIntegrator {
 private:
   using PathTerminateState = SubPathGenerator::TerminateState;
-  const int max_bounce = 8;
+  const int max_bounce = 12;
 
   SubPathGenerator subPathGenerator;
 

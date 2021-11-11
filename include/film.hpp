@@ -4,6 +4,8 @@
 
 #include <iostream>
 
+#include "filter.hpp"
+
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb/stb_image_write.h"
 
@@ -19,10 +21,26 @@ private:
   glm::vec3* pixels;
   float* pWeights;
 
+  Filter* filter;
+  float fradius;
+
+public:
+  //px: w, py: h
+  inline void addRadiance(glm::vec3 L, float weight, int px, int py) {
+    int pos = py*resolutionX+px;
+    if(pos>totPix) {
+      std::cout<<"Add Radiance out of range"<<std::endl;
+      return;
+    }
+    pixels[pos] += weight*L;
+    pWeights[pos] += weight;
+  }
+
 public:
   //reX: image width, reY: image height, fov: degree
-  Film(int reX, int reY, float fov): 
-    resolutionX(reX), resolutionY(reY), fov(fov) {
+  Film(int reX, int reY, float fov, Filter* filter = new BoxFilter(0.5f)): 
+    resolutionX(reX), resolutionY(reY), 
+    fov(fov), filter(filter), fradius(filter->getRadius()-0.5f) {
     
     float t = 2.0f*glm::tan(glm::radians(.5f*fov));
     sensorX = t, sensorY = t*reY/reX;
@@ -40,28 +58,33 @@ public:
   Film(const Film&) = delete;
   const Film& operator=(const Film&) = delete;
 
-  ~Film() {delete pixels; delete pWeights;}
+  ~Film() {delete pixels; delete pWeights; delete filter;}
 
   // result z axis is default -1
-  glm::vec2 raster2camera(glm::vec2 raster) const {
+  inline glm::vec2 raster2camera(glm::vec2 raster) const {
     return {raster.x*rasterPropX - sXhalf, -raster.y*rasterPropY + sYhalf};
   }
 
-  glm::vec2 camera2raster(glm::vec3 camera) const {
+  inline glm::vec2 camera2raster(glm::vec3 camera) const {
     float cx = -camera.x / camera.z;
     float cy = -camera.y / camera.z;
     return {(cx+sXhalf)/rasterPropX, (sYhalf-cy)/rasterPropY};
   }
 
-  //px: w, py: h
-  void addRadiance(glm::vec3 L, float weight, int px, int py) {
-    int pos = py*resolutionX+px;
-    if(pos>totPix) {
-      std::cout<<"Add Radiance out of range"<<std::endl;
-      return;
+  void addSplat(glm::vec3 L, glm::vec2 center) {
+    if(fradius == 0.0f) {
+      int x = (int)center.x, y = (int)center.y;
+      addRadiance(L, filter->evaluate(center-glm::vec2(x+0.5f, y+0.5f)), x, y);
     }
-    pixels[pos] += weight*L;
-    pWeights[pos] += weight;
+    int bxl = glm::max((int)(center.x - fradius), 0);
+    int bxr = glm::min((int)(center.x + fradius), resolutionX-1);
+    int byl = glm::max((int)(center.y - fradius), 0);
+    int byr = glm::min((int)(center.y + fradius), resolutionY-1);
+    for(int i = bxl; i <= bxr; i++) {
+      for(int j = byl; j <= byr; j++) {
+        addRadiance(L, filter->evaluate(center-glm::vec2(i+0.5f, j+0.5f)), i, j);
+      }
+    }
   }
 
   void generateImage(const char* filename) {
@@ -91,7 +114,7 @@ public:
     }
   }
 
-  int getReX() const {return resolutionX;}
-  int getReY() const {return resolutionY;}
+  inline int getReX() const {return resolutionX;}
+  inline int getReY() const {return resolutionY;}
 
 };
