@@ -38,9 +38,9 @@ Model* Model::copy() {
 }
 
 // need to release ptr explicitly
-void Model::toPrimitives(std::vector<Primitive*>& vp, std::vector<Primitive*>& vl){
+void Model::toPrimitives(std::vector<Primitive*>& vp) {
   for(Mesh* mesh : meshes)
-    mesh->toPrimitives(vp, vl);
+    mesh->toPrimitives(vp);
 }
 
 void Model::addMesh(Mesh* mesh) {
@@ -104,9 +104,9 @@ void Model::processNode(aiNode *node, const aiScene *scene){
 }
 
 void Model::toPointClouds(PCShower& pc, int tot_pcn, glm::vec3 col) {
-  std::vector<Primitive*> vp, vl;
-  toPrimitives(vp, vl);
-  DiscreteDistribution dt;
+  std::vector<Primitive*> vp;
+  toPrimitives(vp);
+  DiscreteDistribution1D dt;
   for(Primitive* p: vp) {
     dt.addPdf(p->getArea());
   }

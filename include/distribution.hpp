@@ -6,7 +6,7 @@
 
 #include "sampler.hpp"
 
-class DiscreteDistribution {
+class DiscreteDistribution1D {
 
 private:
   std::vector<float> cdf;
@@ -15,9 +15,9 @@ private:
   bool cdfHaveCalc = false;
 
 public:
-  DiscreteDistribution(){}
+  DiscreteDistribution1D(){}
   // will calc pdf
-  DiscreteDistribution(std::vector<float>& pdf): cdf(pdf) {
+  DiscreteDistribution1D(std::vector<float>& pdf): cdf(pdf) {
     calcCdf();
   }
   
@@ -35,9 +35,9 @@ public:
   }
 
   // return sample idx, pdf
-  int sample(float& pdf) {
+  int sample(float& pdf) const{
     if(!cdfHaveCalc) {
-      std::cout<<"sample distribution before initiating!"<<std::endl;
+      std::cout<<"sample distribution1D before initiating!"<<std::endl;
       return -1;
     }
     float u1 = SampleShape::sampler().get1();
@@ -48,4 +48,74 @@ public:
     return idx;
   }
 
+  float getSumPdf() const {return sum_pdf;}
+
+};
+
+class DiscreteDistribution2D {
+private:
+  std::vector<float> ccdf;
+  std::vector<DiscreteDistribution1D> ppdf;
+  float sum_ccdf;
+  bool cdfHaveCalc = false;
+  int row, col;
+
+public:
+  DiscreteDistribution2D(int row, int col): row(row), col(col) {
+    init(row, col);
+  }
+  DiscreteDistribution2D() {}
+
+  void init(int row, int col) {
+    this->row = row;
+    this->col = col;
+    sum_ccdf = 0;
+    ccdf.resize(row, 0);
+    ppdf.resize(row);
+  }
+
+  void addPdf(float pdf, int row) {
+    if(row >= ccdf.size()) {
+      std::cout<<"ERROR: DD2D add Pdf out of range"<<std::endl;
+      return;
+    }
+    ppdf[row].addPdf(pdf);
+  }
+
+  void calcCdf() {
+    for(unsigned int i = 0; i<ccdf.size(); i++) {
+      ppdf[i].calcCdf();
+      ccdf[i] = ppdf[i].getSumPdf();
+    }
+    for(unsigned int i = 1; i<ccdf.size(); i++) ccdf[i] += ccdf[i-1];
+    sum_ccdf = ccdf.back();
+    for(unsigned int i = 0; i<ccdf.size(); i++) ccdf[i] /= sum_ccdf;
+    cdfHaveCalc = true;
+  }
+
+  bool sample(float& pdf, int& sx, int& sy) const {
+    if(!cdfHaveCalc) {
+      std::cout<<"sample distribution2D before initiating!"<<std::endl;
+      return false;
+    }
+    float u1 = SampleShape::sampler().get1();
+    unsigned int idx = std::lower_bound(ccdf.begin(), ccdf.end(), u1) - ccdf.begin();
+    if(idx >= ccdf.size()) idx = ccdf.size() - 1;
+    if(idx == 0) pdf = ccdf[0];
+    else pdf = ccdf[idx] - ccdf[idx-1];
+    float pdf2;
+    int idx2 = ppdf[idx].sample(pdf2);
+    pdf *= pdf2;
+    sy = idx; sx = idx2;
+    return true;
+  }
+
+  bool sample01(float& pdf, int& sx, int& sy) const {
+    bool res = sample(pdf, sx, sy);
+    sx /= col; sy /= row;
+    return res;
+  }
+
+  inline int getRow() const {return row;}
+  inline int getCol() const {return col;}
 };

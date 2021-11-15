@@ -71,6 +71,10 @@ public:
     return 0.5f*(pMin+pMax);
   }
 
+  inline float getDiagonalLength() {
+    return glm::length(pMax - pMin);
+  }
+
   inline void get8Cornor(glm::vec3* cs) {
     cs[0] = pMin;
     cs[1] = glm::vec3(pMin.x, pMax.y, pMin.z);

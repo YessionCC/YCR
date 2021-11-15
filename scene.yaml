@@ -1,0 +1,70 @@
+Scene:
+  Meshes:
+    - Name: nano
+      Type: Vertex
+      Path: /home/yession/Code/Cpp/ycr/models/Nanosuit/nanosuit.obj
+    - Name: cube
+      Type: Vertex
+      Path: /home/yession/Code/Cpp/ycr/models/Cube/cube.obj
+    - Name: sphere1
+      Type: Sphere
+      Center: [-4.0, -4.0, 1.2]
+      Radius: 3.0
+    - Name: triangle1
+      Type: Triangle
+      Vertices: 
+        - [-8.0, 6.0, 0.0]
+        - [-8.0, 7.0, 0.0]
+        - [-8.0, 6.0, 1.0]
+
+  Lights:
+    - Name: lt1
+      Type: mesh
+      Include: triangle1
+      Radiance: [800,800,800]
+
+  Textures:
+    - Name: grid1
+      Type: Image
+      Path: /home/yession/Code/Cpp/ycr/models/Cube/grid.jpeg
+    - Name: grid2
+      Type: Image
+      Path: /home/yession/Code/Cpp/ycr/models/Cube/grid2.jpeg
+    - Name: solid1
+      Type: Solid
+      Color: [1.0, 1.0, 1.0]
+
+  BXDFs:
+    - Name: lbt1
+      Type: LambertianDiff
+      Textures: [solid1]
+    - Name: lbt2
+      Type: LambertianDiff
+      Textures: [grid1]
+
+  Objects:
+    - Name: nano
+      Include: nano
+      BXDF: lbt1
+    - Name: cube
+      Include: cube
+      BXDF: lbt2
+      
+  Cameras:
+    - Name: cam1
+      Position: [0.0, 0.0, 14.0]
+      Orientation: [0.0, 0.0, -1.0]
+      FOV: 60.0
+
+Render:
+  SPP: 1
+  MaxBounce: 12
+  UseCam: cam1
+
+Output:
+  Path: /home/yession/Code/Cpp/ycr/img/glass_fb0.jpg
+  FILTER: 
+    Type: BoxFilter
+    Radius: 0.5
+  Size: [800, 800]
+  

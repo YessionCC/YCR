@@ -12,12 +12,24 @@ Scene::~Scene() {
 
 void Scene::init() {
   buildBVH();
-  if(lightPrims.size()>0) calcLightDistribution();
+  if(lights.size()>0) calcLightDistribution();
   else std::cout<<"Warning: No Lights!"<<std::endl;
 }
 
 void Scene::addModel(Model& model) {
-  model.toPrimitives(primitives, lightPrims);
+  model.toPrimitives(primitives);
+}
+
+void Scene::addLight(Light* light) {
+  light->addToScene(*this);
+  lights.push_back(light);
+}
+
+void Scene::addPrimitive(Primitive* prim) {
+  primitives.push_back(prim);
+}
+void Scene::addPrimitives(std::vector<Primitive*> prims) {
+  primitives.insert(primitives.end(), prims.begin(), prims.end());
 }
 
 void Scene::buildBVH() {
@@ -25,10 +37,8 @@ void Scene::buildBVH() {
 }
 
 void Scene::calcLightDistribution() {
-  for(Primitive* prim: lightPrims) {
-    float area = prim->getArea();
-    float lumi = prim->getMesh()->light->getLuminance();
-    ldistribution.addPdf(area*lumi);
+  for(Light* light: lights) {
+    ldistribution.addPdf(light->selectProbality(*this));
   }
   ldistribution.calcCdf();
 }
@@ -37,11 +47,15 @@ void Scene::saveBVHHierachyAsPointCloud(PCShower& pc) {
   bvh.generatePointCloud(pc);
 }
 
-float Scene::sampleALight(Primitive*& lprim) {
+float Scene::sampleALight(Light*& light) {
   float pdf = 1.0f;
   int idx = ldistribution.sample(pdf);
-  lprim = lightPrims[idx];
+  light = lights[idx];
   return pdf;
+}
+
+BB3 Scene::getWholeBound() const{
+  return bvh.getWholeBound();
 }
 
 Intersection Scene::intersect(const Ray& ray, const Primitive* prim) {

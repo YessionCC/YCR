@@ -30,6 +30,7 @@ public:
   Ray& testRay, float& rayLen);
   // For Debug, after build BVH
   void generatePointCloud(PCShower& pc);
+  BB3 getWholeBound() const;
 
   const std::vector<Primitive*> & getPrims() const {return prims;}
   const std::vector<BVHNode> & getNodes() const {return bvhNodes;}

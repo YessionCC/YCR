@@ -11,10 +11,12 @@
 #include "debug/pcshow.hpp"
 
 class Scene {
+public:
+  EnvironmentLight* envLight;
 private:
   std::vector<Primitive*> primitives;
-  std::vector<Primitive*> lightPrims;
-  DiscreteDistribution ldistribution; // light distribution
+  std::vector<Light*> lights;
+  DiscreteDistribution1D ldistribution; // light distribution
   
   BB3 sceneBB3;
   BVH bvh;
@@ -23,10 +25,13 @@ private:
   void calcLightDistribution();
 
 public:
-  Scene(): bvh(primitives) {}
+  Scene(): envLight(nullptr), bvh(primitives) {}
   ~Scene();
 
   void addModel(Model& model);
+  void addLight(Light* light);
+  void addPrimitive(Primitive* prim);
+  void addPrimitives(std::vector<Primitive*> prims);
 
   void init();
 
@@ -38,9 +43,10 @@ public:
   bool occlude(const Intersection& it1, const Intersection& it2, 
   Ray& testRay, float& rayLen);
   BVH& getBVH() {return bvh;}
+  BB3 getWholeBound() const;
 
   // return pdf
-  float sampleALight(Primitive*& lprim);
+  float sampleALight(Light*& light);
 
   // For Debug
   void saveBVHHierachyAsPointCloud(PCShower& pc);

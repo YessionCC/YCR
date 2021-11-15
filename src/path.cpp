@@ -1,6 +1,6 @@
 #include "path.hpp"
 #include "debug/analyse.hpp"
-
+int tv = 0;
 int SubPathGenerator::createSubPath(
   const Ray& start_ray, Scene& scene, 
   int max_bounce) {
@@ -11,16 +11,25 @@ int SubPathGenerator::createSubPath(
   Intersection itsc;
 
   for(int i=0; i<max_bounce; i++) {
+    tv++;
     //itsc = scene.intersect(ray, itsc.prim);
     itsc = scene.intersect(ray, nullptr);
     // when there are curve primitive, should not specify the ignored prim
 
-    if(!itsc.prim) {tstate = TerminateState::NoItsc; return i;}
+    if(!itsc.prim) {
+      tstate = TerminateState::NoItsc; 
+      if(scene.envLight && 
+        (i == 0 || _HasType(pathVertices[i-1].bxdfType, DELTA))) {
+        diracRadiance = scene.envLight->evaluate(itsc, -ray.d);
+      }
+      return i;
+    }
+
     Mesh* mesh = itsc.prim->getMesh();
 
     if(mesh->light) {
       if(i == 0 || _HasType(pathVertices[i-1].bxdfType, DELTA)) {
-        diracRadiance = mesh->light->evaluate(itsc, -ray.d)*beta;
+        diracRadiance = mesh->light->evaluate(itsc, -ray.d)*beta ;
       } 
       tstate = TerminateState::ItscLight;
       return i;
@@ -32,8 +41,13 @@ int SubPathGenerator::createSubPath(
     
     ray.d = -ray.d;
     ray.o = itsc.itscVtx.position; 
-
+    if(tv == 619998) {
+      tv= 0;
+    }
     if(bxdf) beta *= bxdf->sample_ev(itsc, ray, sampleRay);
+    if(beta.z < 0) {
+      tv = 0;
+    }
     ray = sampleRay;
 
     // when there are not curve primitive, error offset can comment
@@ -71,7 +85,7 @@ void PathIntegrator::render(RayGenerator& rayGen, Scene& scene, Film& film) {
     //__EndTimeAnalyse__
 
     Ray rayToLight, lastRay;
-    Intersection litsc; float len;
+    Intersection litsc; Light* lt; float len;
     glm::vec3 radiance = subPathGenerator.getDiracLight();
 
     //__StartTimeAnalyse__("dirlight")
@@ -79,9 +93,8 @@ void PathIntegrator::render(RayGenerator& rayGen, Scene& scene, Film& film) {
       
       if(_HasType(pathVtxs[i].bxdfType, DELTA)) continue;
 
-      Primitive* lightPrim;
-      float lpdf = scene.sampleALight(lightPrim);
-      lpdf *= lightPrim->getAPointOnSurface(litsc);
+      float lpdf = scene.sampleALight(lt);
+      lpdf *= lt->getItscOnLight(litsc, pathVtxs[i].itsc.itscVtx.position);
       // TODO
       glm::vec3 dirToLight = litsc.itscVtx.position - 
         pathVtxs[i].itsc.itscVtx.position;
@@ -109,9 +122,9 @@ void PathIntegrator::render(RayGenerator& rayGen, Scene& scene, Film& film) {
 
       float invdis2 = 1.0f/(len*len);
       glm::vec3 leCosDivR2 = 
-        invdis2*lightPrim->getMesh()->light->evaluate(litsc, -rayToLight.d);
+        invdis2*lt->evaluate(litsc, -rayToLight.d);
       BXDF* lastBxdf = pathVtxs[i].itsc.prim->getMesh()->bxdf;
-      if(!lastBxdf) continue;
+      if(!lastBxdf) continue; //
       lastRay.o = rayToLight.o;
       lastRay.d = pathVtxs[i].dir_o;
       glm::vec3 lastBeta = 
@@ -164,14 +177,13 @@ void PathIntegrator::visualizeRender(
       continue;
     }
 
-    Intersection litsc; Ray rayToLight; float len;
+    Intersection litsc; Ray rayToLight; Light* lt; float len;
     for(unsigned int i = 0; i<pathVtxs.size(); i++) {
 
       if(_HasType(pathVtxs[i].bxdfType, DELTA)) continue;
 
-      Primitive* lightPrim;
-      float lpdf = scene.sampleALight(lightPrim);
-      lpdf *= lightPrim->getAPointOnSurface(litsc);
+      float lpdf = scene.sampleALight(lt);
+      lpdf *= lt->getItscOnLight(litsc, pathVtxs[i].itsc.itscVtx.position);
 
       if(scene.occlude(pathVtxs[i].itsc, litsc, rayToLight, len)) continue; 
 

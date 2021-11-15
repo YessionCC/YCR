@@ -26,7 +26,7 @@ public:
 
   Model* copy();
   bool loadFromFile(const char* filename);
-  void toPrimitives(std::vector<Primitive*>& vp, std::vector<Primitive*>& vl);
+  void toPrimitives(std::vector<Primitive*>& vp);
   void translate(glm::vec3 translate);
   void scale(glm::vec3 scale);
   void rotate(glm::vec3 axis, float angle);

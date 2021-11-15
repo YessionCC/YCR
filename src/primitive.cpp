@@ -165,7 +165,7 @@ glm::vec3 Sphere::uniSampleSphereDir() const {
   glm::vec2 uv = SampleShape::sampler().uniSampleSphere();
   glm::vec3 pos;
   pos.z = uv.x;
-  float sinTheta = glm::sqrt(1-uv.x*uv.x);
+  float sinTheta = glm::sqrt(1-glm::min(1.0f, uv.x*uv.x));
   pos.x = sinTheta*glm::cos(uv.y);
   pos.y = sinTheta*glm::sin(uv.y);
   return pos;

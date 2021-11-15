@@ -21,7 +21,8 @@ public:
   glm::vec3 itscError; // the error bound of the itsc point
   Primitive* prim;
 
-  Intersection(): t(FLOAT_MAX), localUV(0), itscError(0), prim(nullptr){}
+  Intersection(): t(FLOAT_MAX), localUV(0), 
+    itscError(0), prim(nullptr) {}
 
   // NOTICE: make sure t > 0 !
   inline void updateItscInfo(float t, Primitive* prim, const Ray& ray) {

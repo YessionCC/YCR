@@ -7,3 +7,4 @@
 5. Rotation and scale are both related to the world origin
 6. Btangent = cross(tangent, normal)
 7. In Custom Primitive, tangent is along the u
+8. In envLight, Img.x->width->phi(x, z), Img.y->height->theta(y)

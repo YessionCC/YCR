@@ -32,8 +32,13 @@ int main() {
   Model lgt(VertexMesh::CreateTriangle(vtxsl));
   Model lgt2(VertexMesh::CreateTriangle(vtxsl2));
 
-  Light* light = new Light(glm::vec3(900.0f));
-  Light* light2 = new Light(glm::vec3(150.0f));
+  EnvironmentLight* envLight = 
+    new EnvironmentLight(
+      new ImageTexture("/home/yession/Code/Cpp/ycr/models/Cube/polar.jpg"));
+  Light* light = new ShapeLight(glm::vec3(900.0f), lgt);
+  Light* light2 = new ShapeLight(glm::vec3(150.0f), lgt2);
+  Light* pLight = new PointLight(glm::vec3(1000), glm::vec3(6,6,6));
+  Light* dLight = new DirectionalLight(glm::vec3(3), glm::vec3(0,-1,0));
   BXDF* bxdf = new GlassSpecular(new SolidTexture(glm::vec3(1.0f)), 1.0f, 1.4f);
   ImageTexture* imgtex = 
     new ImageTexture("/home/yession/Code/Cpp/ycr/models/Cube/grid2.jpeg");
@@ -48,8 +53,6 @@ int main() {
   
   bkg.setBxdfForAllMeshes(bxdf4);
   bkg2.setBxdfForAllMeshes(bxdf2);
-  lgt.setLightFoeAllMeshes(light);
-  lgt2.setLightFoeAllMeshes(light2);
   sphere.setBxdfForAllMeshes(bxdf);
   sphere3.setBxdfForAllMeshes(bxdf5);
   cube.setBxdfForAllMeshes(bxdf5);
@@ -71,13 +74,14 @@ int main() {
   sphere2.translate({8, 0, 0});
   Model cube2 = cube;
   cube2.setBxdfForAllMeshes(bxdf);
-  cube2.scale(glm::vec3(0.5f));
-  cube2.translate({3,-3.2,10});
+  cube2.scale(glm::vec3(5, 0.5, 5));
+  cube2.translate({4,5,20});
 
   PCShower pc;
   Scene scene;
   //scene.addModel(nano);
-  scene.addModel(lgt);
+  //scene.addLight(light);
+  scene.addLight(envLight);
   //scene.addModel(lgt2);
   //scene.addModel(bkg);
   scene.addModel(bkg2);
@@ -85,7 +89,7 @@ int main() {
   scene.addModel(sphere2);
   scene.addModel(sphere3);
   scene.addModel(cube);
-  scene.addModel(cube2);
+  //scene.addModel(cube2);
 
   scene.init();
 
@@ -94,10 +98,10 @@ int main() {
   bkg2.toPointClouds(pc, 3e4, glm::vec3(0.4, 0.6, 0.1));
   lgt.toPointClouds(pc, 1e4, glm::vec3(1, 0, 0));
   //lgt2.toPointClouds(pc, 1e4, glm::vec3(1, 0, 0));
-  sphere.toPointClouds(pc, 1e4, glm::vec3(1));
-  sphere2.toPointClouds(pc, 1e4, glm::vec3(1));
-  sphere3.toPointClouds(pc, 1e4, glm::vec3(1));
-  cube.toPointClouds(pc, 1e4, glm::vec3(1.0f));
+  //sphere.toPointClouds(pc, 1e4, glm::vec3(1));
+  //sphere2.toPointClouds(pc, 1e4, glm::vec3(1));
+  //sphere3.toPointClouds(pc, 1e4, glm::vec3(1));
+  //cube.toPointClouds(pc, 1e4, glm::vec3(1.0f));
   cube2.toPointClouds(pc, 1e4, glm::vec3(1.0f));
 
   Film film(800, 800, 60);
@@ -112,7 +116,7 @@ int main() {
   film.generateImage("/home/yession/Code/Cpp/ycr/img/glass_fb0.jpg");
   film.clear();
 
-  //integrator.visualizeRender(pc, rGen, scene, film);
+  integrator.visualizeRender(pc, rGen, scene, film);
 
   std::cout<<"Render Complete"<<std::endl;
   //__ShowTimeAnalyse__

@@ -43,16 +43,13 @@ void VertexMesh::rotate(glm::vec3 axis, float angle) {
 };
 
 // need to release ptr explicitly
-void VertexMesh::toPrimitives(
-  std::vector<Primitive*>& vp, 
-  std::vector<Primitive*>& vl) {
+void VertexMesh::toPrimitives(std::vector<Primitive*>& vp) {
   for(unsigned int i=0; i<indices.size(); i+=3) {
     int i1 = indices[i], i2 = indices[i+1], i3 = indices[i+2];
     Triangle* prim = 
       new Triangle(vertices[i1], vertices[i2], vertices[i3], this);
     if(needInitVertex) prim->autoCalcParams();
     vp.push_back(prim);
-    if(light) vl.push_back(prim);
   }
 }
 
@@ -120,17 +117,9 @@ void CustomMesh::rotate(glm::vec3 axis, float rot) {
 }
 
 // vp: all prims, vl: light(emission) prims
-void CustomMesh::toPrimitives(
-  std::vector<Primitive*>& vp, 
-  std::vector<Primitive*>& vl
-) {
+void CustomMesh::toPrimitives(std::vector<Primitive*>& vp) {
   for(Primitive* prim: prims) {
     vp.push_back(prim);
-  }
-  if(light) {
-    for(Primitive* prim: prims) {
-      vl.push_back(prim);
-    }
   }
 }
 

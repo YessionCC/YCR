@@ -146,3 +146,7 @@ bool BVH::occlude(const Intersection& it1, const Intersection& it2,
   //if(itsc.prim && itsc.prim != it2.prim) return true;
   return false;
 }
+
+BB3 BVH::getWholeBound() const{
+  return bvhNodes[0].bb3;
+} 
