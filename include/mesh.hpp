@@ -4,6 +4,8 @@
 #include "light.hpp"
 #include <glm/glm.hpp>
 
+class Medium;
+
 class Mesh {
 protected:
   enum MeshType {
@@ -14,6 +16,7 @@ protected:
 
 public:
   BXDF* bxdf = nullptr;
+  Medium* medium = nullptr;
   Light* light = nullptr; //if null, it is not emissive
 
   virtual ~Mesh() {delete bxdf; delete light;} //
@@ -68,4 +71,5 @@ public:
   void toPrimitives(std::vector<Primitive*>& vp) override;
 
   static CustomMesh* CreateSphere(glm::vec3 center, float radius);
+  static CustomMesh* CreatePoint(glm::vec3 pos);
 };

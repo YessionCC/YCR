@@ -39,6 +39,8 @@ public:
     ray.d = cam2world_rot*camdir;
   }
 
+  glm::vec3 getPosition() const {return position;}
+
   void visualizePointCloud(PCShower& pc, float distance, int pcn) {
     Ray r1, r2, r3, r4;
     generateRay(r1, {0, 0});

@@ -9,7 +9,13 @@ constexpr float FLOAT_EPSILON = 0.5f*std::numeric_limits<float>::epsilon();
 constexpr int MAX_INT = std::numeric_limits<int>::max();
 constexpr int MIN_INT = std::numeric_limits<int>::min();
 
-const float CUSTOM_EPSILON = 1e-9;
+// Even we use itvxError to make the itsc in the right side of the surface,
+// for primitive intersect numerical error, 
+// negative t may be still calc as postive
+// but because the itsc is on the right side, the error mentioned above will
+// not exceed a certain error, we define it as CUSTOM_EPSILON
+const float CUSTOM_EPSILON = 1e-6;
+
 const float PI = 3.1415926536;
 const float PI2 = 6.2831853072;
 const float PI4 = 12.5663706144;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+
 #include "vertex.hpp"
 #include "bb3.hpp"
 #include "ray.hpp"
@@ -53,6 +55,10 @@ public:
 class Triangle: public Primitive { //Triangle
 private:
   Vertex* verts[3];
+  // geoNormal is the real normal for the triangle surface
+  // itsc.normal is always the interpolated normal or even
+  // bump mapping normal
+  glm::vec3 geoNormal;
 
 public:
   Triangle() {}
@@ -149,4 +155,60 @@ public:
 
   void genPrimPointCloud(PCShower& pc, glm::vec3 col) const;
 
+};
+
+// this primitive is just for help, meaningless
+class PointPrim: public Primitive {
+private:
+  glm::vec3 position;
+
+public:
+  PointPrim(glm::vec3 pos, Mesh* mesh): Primitive(mesh), position(pos) {}
+
+  Primitive* copy(Mesh* _mesh) const {
+    return new PointPrim(position, _mesh);
+  }
+
+  BB3 getBB3() const {
+    return BB3(position);
+  }
+
+  void translate(glm::vec3 trans) {
+    position += trans;
+  }
+  void scale(glm::vec3) {
+    std::cout<<"PointPrim::scale is undefined"<<std::endl;
+  }
+  void rotate(glm::vec3, float) {
+    std::cout<<"PointPrim::rotate is undefined"<<std::endl;
+  }
+
+  virtual inline glm::vec3 getCenter() const {return position;}
+
+  virtual inline float getArea() const {return 0;}
+
+  // return pdf
+  virtual float getAPointOnSurface(Intersection& itsc) {
+    itsc.itscVtx.position = position;
+    itsc.prim = this;
+    return 1.0f;
+  }
+
+  // notice: itsc as in-out variable
+  virtual void intersect(const Ray& ray, Intersection& itsc) {
+    std::cout<<"PointPrim::intersect is undefined"<<std::endl;
+  }
+
+  // just return whether intersect or not
+  virtual bool intersectTest(const Ray& ray) const {
+    std::cout<<"PointPrim::intersectTest is undefined"<<std::endl;
+    return false;
+  }
+
+  //set normal, uv, and other for itsc
+  virtual void handleItscResult(Intersection& itsc) const {}
+
+  virtual void genPrimPointCloud(PCShower& pc, glm::vec3 col) const {
+    pc.addItem(position, col);
+  }
 };

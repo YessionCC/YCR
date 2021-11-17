@@ -1,6 +1,7 @@
-#include"model.hpp"
-#include"vertex.hpp"
-#include"distribution.hpp"
+#include "model.hpp"
+#include "vertex.hpp"
+#include "distribution.hpp"
+#include "medium.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -47,6 +48,13 @@ void Model::addMesh(Mesh* mesh) {
   meshes.push_back(mesh);
 }
 
+bool Model::hasMesh(Mesh* mesh) const{
+  for(Mesh* m: meshes) {
+    if(m == mesh) return true;
+  }
+  return false;
+}
+
 void Model::translate(glm::vec3 translate) {
   for(Mesh* mesh: meshes) {
     mesh->translate(translate);
@@ -89,8 +97,12 @@ void Model::setBxdfForAllMeshes(BXDF* bxdf) {
   for(Mesh* mesh: meshes) mesh->bxdf = bxdf;
 }
 
-void Model::setLightFoeAllMeshes(Light* light) {
+void Model::setLightForAllMeshes(Light* light) {
   for(Mesh* mesh: meshes) mesh->light = light;
+}
+
+void Model::setMediumForAllMeshes(Medium* medium) {
+  for(Mesh* mesh: meshes) mesh->medium = medium;
 }
 
 void Model::processNode(aiNode *node, const aiScene *scene){

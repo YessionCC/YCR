@@ -128,3 +128,9 @@ CustomMesh* CustomMesh::CreateSphere(glm::vec3 center, float radius){
   mesh->prims.push_back(new Sphere(center, radius, mesh));
   return mesh;
 }
+
+CustomMesh* CustomMesh::CreatePoint(glm::vec3 pos) {
+  CustomMesh* mesh = new CustomMesh;
+  mesh->prims.push_back(new PointPrim(pos, mesh));
+  return mesh;
+}

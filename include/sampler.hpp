@@ -82,4 +82,8 @@ public:
     float zeta1 = glm::sqrt(urd(eng));
     return {1-zeta1, urd(eng)*zeta1};
   }
+
+  inline float expSampleMedium(float sigmaT) {
+    return -std::log(urd(eng)) / sigmaT;
+  }
 };

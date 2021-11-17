@@ -2,7 +2,7 @@
 #include "scene.hpp"
 
 ShapeLight::ShapeLight(glm::vec3 le, Model& shape): le(le), model(shape) {
-    model.setLightFoeAllMeshes(this);
+    model.setLightForAllMeshes(this);
   }
 
 void ShapeLight::addToScene(Scene& scene) {
@@ -22,7 +22,7 @@ float ShapeLight::selectProbality(const Scene& scene) {return selectP;}
 
 // calc Le*cosTheta, dir in world space, dir point to outside surface
 glm::vec3 ShapeLight::evaluate(const Intersection& itsc, glm::vec3 dir) const {
-  return le*glm::max(0.0f, itsc.cosTheta(dir));
+  return le*glm::max(0.0f, itsc.itscVtx.cosTheta(dir));
 }
 
 float ShapeLight::getItscOnLight(Intersection& itsc, glm::vec3 evaP) const {
@@ -38,7 +38,7 @@ float DirectionalLight::selectProbality(const Scene& scene) {
   // maybe improve in the later
   BB3 totBB3 = scene.getWholeBound();
   sceneDiameter = totBB3.getDiagonalLength();
-  return 0.25f*PI*sceneDiameter*sceneDiameter*Luminance(le);
+  return Luminance(le);
 }
 
 EnvironmentLight::EnvironmentLight(Texture* tex, float scale): 
@@ -66,7 +66,7 @@ float EnvironmentLight::selectProbality(const Scene& scene) {
   // maybe improve in the later
   BB3 totBB3 = scene.getWholeBound();
   sceneDiameter = totBB3.getDiagonalLength();
-  return PI*sceneDiameter*sceneDiameter*avgLuminance*lumiScale;
+  return PI4*avgLuminance*lumiScale;
 }
 
 glm::vec3 EnvironmentLight::evaluate(

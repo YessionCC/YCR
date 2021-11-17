@@ -20,17 +20,31 @@ public:
   DiscreteDistribution1D(std::vector<float>& pdf): cdf(pdf) {
     calcCdf();
   }
+  DiscreteDistribution1D(int num) {
+    cdf.resize(num, 0);
+  }
   
   // will not calc pdf, after all pdf added, need call calcCdf explicitly
   void addPdf(float pdf) {
     cdf.push_back(pdf);
   }
 
+  // must pre resize
+  void addPdf(float pdf, int idx) {
+    cdf[idx] = pdf;
+  }
+
   void calcCdf() {
     if(cdfHaveCalc) return;
     for(unsigned int i = 1; i<cdf.size(); i++) cdf[i]+=cdf[i-1];
     sum_pdf = cdf.back();
-    for(unsigned int i = 0; i<cdf.size(); i++) cdf[i]/=sum_pdf;
+    if(sum_pdf == 0.0f) {
+      std::cout<<"WARNING: Distribution has 0 cdf, "<<
+        "default to uniform distribution"<<std::endl;
+      float uni = 1.0f / cdf.size();
+      for(unsigned int i = 0; i<cdf.size(); i++) cdf[i]=uni*(i+1);
+    }
+    else for(unsigned int i = 0; i<cdf.size(); i++) cdf[i]/=sum_pdf;
     cdfHaveCalc = true;
   }
 
@@ -82,6 +96,15 @@ public:
     ppdf[row].addPdf(pdf);
   }
 
+  // must pre resize
+  void addPdf(float pdf, int row, int col) {
+    if(row >= this->row || col >= this->col) {
+      std::cout<<"ERROR: DD2D add Pdf out of range"<<std::endl;
+      return;
+    }
+    ppdf[row].addPdf(pdf, col);
+  }
+
   void calcCdf() {
     for(unsigned int i = 0; i<ccdf.size(); i++) {
       ppdf[i].calcCdf();
@@ -89,6 +112,10 @@ public:
     }
     for(unsigned int i = 1; i<ccdf.size(); i++) ccdf[i] += ccdf[i-1];
     sum_ccdf = ccdf.back();
+    if(sum_ccdf == 0.0f) {
+      std::cout<<"ERROR! DD2D has all zero value!"<<std::endl;
+      return;
+    }
     for(unsigned int i = 0; i<ccdf.size(); i++) ccdf[i] /= sum_ccdf;
     cdfHaveCalc = true;
   }

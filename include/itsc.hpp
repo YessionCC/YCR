@@ -13,12 +13,14 @@ class Primitive;
 class Intersection {
 public:
   float t;
+  // all interpolated when triangle
   Vertex itscVtx;
   // NOTICE when use uv map, do not use it !! use itscVtx.uv
   // localUV used in triangle intersect, 
   // some custom primitive intersect will not use it
   glm::vec2 localUV;
   glm::vec3 itscError; // the error bound of the itsc point
+  glm::vec3 geoNormal; // the real normal for the surface
   Primitive* prim;
 
   Intersection(): t(FLOAT_MAX), localUV(0), 
@@ -44,21 +46,21 @@ public:
 
   // offset pos by error and the relation of normal and dir
   inline void maxErrorOffset(glm::vec3 dir, glm::vec3& pos) {
-    float errord = glm::dot(itscError, glm::abs(itscVtx.normal));
+    float errord = glm::dot(itscError, glm::abs(geoNormal));
     errord = std::nextafter(errord, FLOAT_MAX); //+1 ulp
-    if(glm::dot(dir, itscVtx.normal) > 0) pos += errord*itscVtx.normal;
-    else pos -= errord*itscVtx.normal;
+    if(glm::dot(dir, geoNormal) > 0) pos += errord*geoNormal;
+    else pos -= errord*geoNormal;
   }
 
   // from world space direction to calc tangent space angles
   
-  // dot(w, n) should >0
+  // dot(w, n) should >0, with real geoNormal
   inline float cosTheta(glm::vec3 w) const{
-    return itscVtx.cosTheta(w);
+    return glm::dot(geoNormal, w);
   }
 
   inline float theta(glm::vec3 w) const{
-    return itscVtx.theta(w);
+    return glm::acos(glm::dot(geoNormal, w));
   }
 
   // tan(phi), do not promiss valid return !

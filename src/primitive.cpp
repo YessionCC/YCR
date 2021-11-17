@@ -14,6 +14,9 @@ Triangle::Triangle(Vertex* v1, Vertex* v2, Vertex* v3, Mesh* mesh) {
   verts[1] = v2;
   verts[2] = v3;
   this->mesh = mesh;
+  glm::vec3 v1v2 = v2->position - v1->position;
+  glm::vec3 v1v3 = v3->position - v1->position;
+  geoNormal = glm::normalize(glm::cross(v1v2, v1v3));
 }
 
 BB3 Triangle::getBB3() const{
@@ -108,6 +111,7 @@ void Triangle::handleItscResult(Intersection& itsc) const{ // for triangle
   itsc.itscError = _Gamma(3)*
     (w*glm::abs(verts[0]->position)+u*glm::abs(verts[1]->position))+
     _Gamma(2)*v*glm::abs(verts[0]->position);
+  itsc.geoNormal = geoNormal;
 }
 
 void Triangle::autoCalcParams(bool reverseNormal) { 
@@ -229,7 +233,7 @@ bool Sphere::intersectTest(const Ray& ray) const{
 //set normal, uv, and other for itsc from itsc.position
 void Sphere::handleItscResult(Intersection& itsc) const{
   glm::vec3 normal = glm::normalize(itsc.itscVtx.position - this->center);
-  itsc.itscVtx.normal = normal;
+  itsc.itscVtx.normal = itsc.geoNormal = normal;
   calcItscInfoFromNormal(itsc, normal);
 }
 

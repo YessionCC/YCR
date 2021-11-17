@@ -13,8 +13,17 @@
 #include "bxdf.hpp"
 #include "light.hpp"
 #include "mesh.hpp"
+#include "medium.hpp"
 
 class Model {
+private:
+  bool isInvalidModel = true;
+  std::string modelDirectory;
+  std::vector<Mesh*> meshes;
+
+  void processNode(aiNode *node, const aiScene *scene);
+  Mesh* processMesh(aiMesh *mesh, const aiScene *scene);
+
 public:
   ~Model();
   Model() {}
@@ -31,16 +40,10 @@ public:
   void scale(glm::vec3 scale);
   void rotate(glm::vec3 axis, float angle);
   void setBxdfForAllMeshes(BXDF* bxdf);
-  void setLightFoeAllMeshes(Light* light);
+  void setLightForAllMeshes(Light* light);
+  void setMediumForAllMeshes(Medium* medium);
   void addMesh(Mesh* mesh);
+  bool hasMesh(Mesh* mesh) const;
 
   void toPointClouds(PCShower& pc, int tot_pcn, glm::vec3 col);
-
-private:
-  bool isInvalidModel = true;
-  std::string modelDirectory;
-  std::vector<Mesh*> meshes;
-
-  void processNode(aiNode *node, const aiScene *scene);
-  Mesh* processMesh(aiMesh *mesh, const aiScene *scene);
 };
