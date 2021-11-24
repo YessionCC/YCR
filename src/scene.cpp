@@ -1,6 +1,5 @@
 #include "scene.hpp"
 #include "debug/analyse.hpp"
-
 #include <iostream>
 
 Scene::~Scene() {
@@ -117,6 +116,7 @@ bool Scene::occlude(const Ray& ray, float t_limit, const Primitive* prim_avd) {
 }
 
 // For volume direct light test
+// medium: the medium the ray.o in
 bool Scene::occlude(const Ray& ray, float t_limit, glm::vec3& tr,
   Medium* medium, const Primitive* prim_avd) {
 
@@ -146,7 +146,15 @@ bool Scene::occlude(const Ray& ray, float t_limit, glm::vec3& tr,
           testRay.o = itsc.itscVtx.position;
           itsc.maxErrorOffset(testRay.d, testRay.o);
         }
-        else return true; // something occlude in medium
+        else {
+          
+          if(itsc.prim->getMesh()->getType()==Mesh::MeshType::CustomMesh) {
+            int a = 0;
+            tr *= glm::vec3(-1000);
+          }
+          return true; // something occlude in medium
+        }
+          
       }
     }
     else {

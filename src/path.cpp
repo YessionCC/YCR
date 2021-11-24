@@ -80,6 +80,7 @@ void PathIntegrator::render(RayGenerator& rayGen, Scene& scene, Film& film) {
 
   Ray ray; glm::vec2 rasPos;
   auto& pathVtxs = subPathGenerator.getPathVtxs();
+  int ttc = 0;
   while(rayGen.genNextRay(ray, rasPos)) {
     // if((int)rasPos.x == 161 && (int)rasPos.y == 520) {
     //   int c = 1;
@@ -87,7 +88,10 @@ void PathIntegrator::render(RayGenerator& rayGen, Scene& scene, Film& film) {
     // if((int)rasPos.x == 523 && (int)rasPos.y == 521) {
     //   int c = 1;
     // }
-
+    ttc++;
+    if(ttc == 160) {
+      int a = 1;
+    }
     subPathGenerator.clear();
 
     //__StartTimeAnalyse__("subpath")
@@ -143,18 +147,22 @@ void PathIntegrator::render(RayGenerator& rayGen, Scene& scene, Film& film) {
       if(!lastBxdf) continue; //
       lastRay.o = rayToLight.o;
       lastRay.d = pathVtxs[i].dir_o;
+
+      float cosTheta = 1.0f;
+      if(!mesh->medium)
+        cosTheta = glm::abs(pathVtxs[i].itsc.itscVtx.cosTheta(rayToLight.d));
       glm::vec3 lastBeta = 
-        glm::abs(pathVtxs[i].itsc.itscVtx.cosTheta(rayToLight.d)) *
+        cosTheta *
         lastBxdf->evaluate(pathVtxs[i].itsc, lastRay, rayToLight);
 
       // debug error detect
-      glm::vec3 pathrad = pathVtxs[i].beta*leCosDivR2*lastBeta / lpdf;
+      glm::vec3 pathrad = tr*pathVtxs[i].beta*leCosDivR2*lastBeta / lpdf;
       if(pathrad.x<0 || pathrad.y<0 || pathrad.z<0) {
         std::cout<<"find negative radiance: "
           <<rasPos.x<<" "<<rasPos.y<<std::endl;
       }
 
-      radiance += tr*pathrad;
+      radiance += pathrad;
     }
     //__EndTimeAnalyse__
 

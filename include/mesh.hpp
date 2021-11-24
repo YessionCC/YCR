@@ -7,11 +7,12 @@
 class Medium;
 
 class Mesh {
-protected:
+public:
   enum MeshType {
     VertexMesh,
     CustomMesh
   };
+protected:
   MeshType type;
 
 public:
