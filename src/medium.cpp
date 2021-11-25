@@ -3,7 +3,7 @@
 #include "scene.hpp"
 
 Medium::Medium(float sigmaT, glm::vec3 sigmaS, 
-  Model& model, BXDF* phaseFunc):
+  Model* model, BXDF* phaseFunc):
   sigmaT(sigmaT), sigmaS(sigmaS),
   bound(model), phaseFunc(phaseFunc) {
 
@@ -11,16 +11,17 @@ Medium::Medium(float sigmaT, glm::vec3 sigmaS,
   particle = mesh->prims[0];
   particleMesh = mesh;
   particleMesh->bxdf = phaseFunc;
-  particleMesh->medium = this;
+  particleMesh->mediumInside = this;
 }
 
-void Medium::addToScene(Scene& scene) {
-  bound.setMediumForAllMeshes(this);
-  bound.setBxdfForAllMeshes(nullptr);
-  scene.addModel(bound);
+void Medium::addToScene(Scene& scene, bool noBXDF) {
+  if(!bound) return;
+  bound->setMediumForAllMeshes(this);
+  if(noBXDF) bound->setBxdfForAllMeshes(new PureTransmission()); // memory manager notice 
+  scene.addModel(*bound);
 }
 
-glm::vec3 Medium::sampleNextItsc(const Ray& ray, Intersection& itsc) {
+glm::vec3 Medium::sampleNextItsc(const Ray& ray, Intersection& itsc) const{
   float t = SampleShape::sampler().expSampleMedium(sigmaT);
   if(t < itsc.t) {
     itsc.itscVtx.position = ray.pass(t);

@@ -1,5 +1,4 @@
 #include "path.hpp"
-#include "medium.hpp"
 #include "bxdf.hpp"
 #include "debug/analyse.hpp"
 
@@ -7,69 +6,60 @@ int SubPathGenerator::createSubPath(
   const Ray& start_ray, Scene& scene, 
   int max_bounce) {
 
-  int loopcnt = 0;
   Ray ray = start_ray, sampleRay;
   PathVertex pvtx;
-  glm::vec3 beta(1.0f);
   Intersection itsc;
-  Medium* inMedium = scene.coverCameraMedium;
+  glm::vec3 beta(1.0f);
+  const Medium* inMedium = scene.getGlobalMedium();
   
-  for(int i=0; i<max_bounce; i++, loopcnt++) {
-    if(loopcnt > max_bounce*4) {
-      std::cout<<"Warning: abnormal loop detect: "<<itsc.t<<std::endl;
-      break;
-    }
+  for(int bounce=0; bounce<max_bounce; bounce++) {
     //itsc = scene.intersect(ray, itsc.prim);
     itsc = scene.intersect(ray, nullptr);
     if(inMedium)
       beta *= inMedium->sampleNextItsc(ray, itsc);
-    // when there are curve primitive, should not specify the ignored prim
+
     if(!itsc.prim) {
-      if(scene.envLight && 
-        (i == 0 || _HasType(pathVertices[i-1].bxdfType, DELTA))) {
+      if(scene.envLight &&  // handle infinite far envLight
+        (bounce == 0 || _HasType(pathVertices[bounce-1].bxdfType, DELTA))) {
         diracRadiance = scene.envLight->evaluate(itsc, -ray.d)*beta;
       }
       tstate = TerminateState::NoItsc; 
-      return i;
+      return bounce;
     }
 
     Mesh* mesh = itsc.prim->getMesh();
     BXDF* bxdf = mesh->bxdf;
 
-    if(mesh->light) {
-      if(i == 0 || _HasType(pathVertices[i-1].bxdfType, DELTA)) {
+    if(mesh->light) { // handle dirac light
+      if(bounce == 0 || _HasType(pathVertices[bounce-1].bxdfType, DELTA)) {
         diracRadiance = mesh->light->evaluate(itsc, -ray.d)*beta ;
       } 
       tstate = TerminateState::ItscLight;
-      return i;
+      return bounce;
     }
     
     ray.o = itsc.itscVtx.position; 
+    ray.d = -ray.d;
+    beta *= bxdf->sample_ev(itsc, ray, sampleRay);
+    ray = sampleRay;
 
-    if(bxdf) {
-      ray.d = -ray.d;
-      beta *= bxdf->sample_ev(itsc, ray, sampleRay);
-      ray = sampleRay;
+    pvtx.bxdfType = bxdf->getType();
+    pvtx.inMedium = inMedium;
+    pvtx.dir_o = -ray.d;
+    pvtx.beta = beta;
+    pvtx.itsc = itsc;
+    pathVertices.push_back(pvtx);
 
-      pvtx.bxdfType = bxdf->getType();
-      if(!_IsType(pvtx.bxdfType, MEDIUM))
-        itsc.maxErrorOffset(ray.d, ray.o);//
-      // if the bxdf is RTBoth, then the offset is up to the direct light
-      if(!_IsType(pvtx.bxdfType, RTBoth)) {
-        itsc.itscVtx.position = ray.o;
-      }
-
-      pvtx.beta = beta;
-      pvtx.dir_o = -ray.d;
-      pvtx.itsc = itsc;
-      pathVertices.push_back(pvtx);
-    }
-    else {
-      i--;
+    // if the bxdf is medium(not has medium, like pureTrans), its not surface, so no shift
+    // if the bxdf is RTBoth, then the offset is up to the direct light
+    if(!_IsType(pvtx.bxdfType, MEDIUM) &&
+       !_IsType(pvtx.bxdfType, RTBoth))
       itsc.maxErrorOffset(ray.d, ray.o);//
-      if(inMedium) inMedium = nullptr; // exit medium
-      else inMedium = mesh->medium; // enter medium
-    }
+
+    // if is medium particle, it always in medium
+    if(_IsType(pvtx.bxdfType, MEDIUM)) continue;
+    if(itsc.cosTheta(ray.d) < 0) inMedium = mesh->mediumInside;
+    else inMedium = mesh->mediumOutside;
     
   }
   tstate = TerminateState::UpToMaxBounce;
@@ -80,18 +70,12 @@ void PathIntegrator::render(RayGenerator& rayGen, Scene& scene, Film& film) {
 
   Ray ray; glm::vec2 rasPos;
   auto& pathVtxs = subPathGenerator.getPathVtxs();
-  int ttc = 0;
+
   while(rayGen.genNextRay(ray, rasPos)) {
-    // if((int)rasPos.x == 161 && (int)rasPos.y == 520) {
-    //   int c = 1;
+    // if((int)rasPos.x == 344 && (int)rasPos.y == 169) {
+    //   int a = 0;
     // }
-    // if((int)rasPos.x == 523 && (int)rasPos.y == 521) {
-    //   int c = 1;
-    // }
-    ttc++;
-    if(ttc == 160) {
-      int a = 1;
-    }
+
     subPathGenerator.clear();
 
     //__StartTimeAnalyse__("subpath")
@@ -100,7 +84,7 @@ void PathIntegrator::render(RayGenerator& rayGen, Scene& scene, Film& film) {
 
     Ray rayToLight, lastRay;
     Intersection litsc; Light* lt; float len;
-    glm::vec3 radiance = subPathGenerator.getDiracLight(), tr;
+    glm::vec3 radiance = subPathGenerator.getDiracLight(), tr = glm::vec3(1.0f);
 
     //__StartTimeAnalyse__("dirlight")
     for(unsigned int i = 0; i<pathVtxs.size(); i++) {
@@ -136,7 +120,7 @@ void PathIntegrator::render(RayGenerator& rayGen, Scene& scene, Film& film) {
       Mesh* mesh = pathVtxs[i].itsc.prim->getMesh();
 
       //if(scene.occlude(rayToLight, len, litsc.prim)) continue; 
-      if(scene.occlude(rayToLight, len, tr, mesh->medium, litsc.prim)) 
+      if(scene.occlude(rayToLight, len, tr, pathVtxs[i].inMedium, litsc.prim)) 
         continue; 
       //if(scene.occlude(pathVtxs[i].itsc, litsc, rayToLight, len)) continue; 
 
@@ -148,26 +132,25 @@ void PathIntegrator::render(RayGenerator& rayGen, Scene& scene, Film& film) {
       lastRay.o = rayToLight.o;
       lastRay.d = pathVtxs[i].dir_o;
 
-      float cosTheta = 1.0f;
-      if(!mesh->medium)
-        cosTheta = glm::abs(pathVtxs[i].itsc.itscVtx.cosTheta(rayToLight.d));
-      glm::vec3 lastBeta = 
-        cosTheta *
-        lastBxdf->evaluate(pathVtxs[i].itsc, lastRay, rayToLight);
-
+      glm::vec3 lastBeta = lastBxdf->evaluate(pathVtxs[i].itsc, lastRay, rayToLight);
       // debug error detect
-      glm::vec3 pathrad = tr*pathVtxs[i].beta*leCosDivR2*lastBeta / lpdf;
-      if(pathrad.x<0 || pathrad.y<0 || pathrad.z<0) {
+      glm::vec3 pathRad = tr*pathVtxs[i].beta*leCosDivR2*lastBeta / lpdf;
+
+      if(pathRad.x<0 || pathRad.y<0 || pathRad.z<0) {
         std::cout<<"find negative radiance: "
           <<rasPos.x<<" "<<rasPos.y<<std::endl;
       }
+      if(pathRad.x>1e5 || pathRad.y>1e5 || pathRad.z>1e5) {
+        std::cout<<"find huge radiance: "
+          <<rasPos.x<<" "<<rasPos.y<<std::endl;
+      }
 
-      radiance += pathrad;
+      radiance += pathRad;
     }
     //__EndTimeAnalyse__
 
-    //film.addRadiance(radiance, 1, rasPos.x, rasPos.y);
-    film.addSplat(radiance, rasPos);
+    film.addRadiance(radiance, 1, rasPos.x, rasPos.y);
+    //film.addSplat(radiance, rasPos);
   }
   rayGen.clear();
 }

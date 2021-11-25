@@ -50,6 +50,6 @@ void Film::generateImage(const char* filename) {
     output[i*3+1] = (unsigned char)(pixels[i].y);
     output[i*3+2] = (unsigned char)(pixels[i].z);
   }
-  stbi_write_jpg(filename, resolutionX, resolutionY, 3, output, 0);
+  stbi_write_jpg(filename, resolutionX, resolutionY, 3, output, 100);
   delete output;
 }

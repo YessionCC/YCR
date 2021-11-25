@@ -45,7 +45,7 @@ public:
   }
 
   // offset pos by error and the relation of normal and dir
-  inline void maxErrorOffset(glm::vec3 dir, glm::vec3& pos) {
+  inline void maxErrorOffset(glm::vec3 dir, glm::vec3& pos) const{
     float errord = glm::dot(itscError, glm::abs(geoNormal));
     errord = std::nextafter(errord, FLOAT_MAX); //+1 ulp
     if(glm::dot(dir, geoNormal) > 0) pos += errord*geoNormal;

@@ -35,7 +35,7 @@ int main() {
   EnvironmentLight* envLight = 
     new EnvironmentLight(
       new ImageTexture("/home/yession/Code/Cpp/ycr/models/Cube/polar.jpg"));
-  Light* light = new ShapeLight(glm::vec3(2000.0f), lgt);
+  Light* light = new ShapeLight(glm::vec3(800.0f), lgt);
   Light* light2 = new ShapeLight(glm::vec3(150.0f), lgt2);
   Light* pLight = new PointLight(glm::vec3(1000), glm::vec3(6,6,6));
   Light* dLight = new DirectionalLight(glm::vec3(3), glm::vec3(0,-1,0));
@@ -57,7 +57,7 @@ int main() {
   sphere.setBxdfForAllMeshes(bxdf);
   sphere3.setBxdfForAllMeshes(bxdf5);
   cube.setBxdfForAllMeshes(bxdf5);
-  nano.setBxdfForAllMeshes(bxdf4);
+  nano.setBxdfForAllMeshes(bxdf);
   cube.rotate({0,1,0}, 30);
   cube.scale({5,5,5});
   cube.translate({-2, -4, -6});
@@ -73,7 +73,7 @@ int main() {
   sphere3.scale(glm::vec3(1.5));
   sphere3.rotate({0, 0, 1}, 45);
   sphere3.translate({-4,0,5});
-  sphere3.translate({2,3,1});
+  sphere3.translate({-2,18,-1});
 
   Model sphere2 = sphere;
   sphere2.setBxdfForAllMeshes(bxdf3);
@@ -82,17 +82,21 @@ int main() {
   cube2.setBxdfForAllMeshes(bxdf);
   cube2.scale(glm::vec3(500, 500, 500));
   cube2.translate({16,25,20});
+  sphere.scale(glm::vec3(1.5));
+  sphere.translate(glm::vec3(-1, 14, 0));
 
-  glm::vec3 sigmaS(0.6); float sT = 0.07;
+  glm::vec3 sigmaS(0.6); float sT = 0.7;
   Medium* medium = new Medium(
-    sT, sigmaS, cube2, new HenyeyPhase(0.5, sigmaS));
+    sT, sigmaS, &nano, new HenyeyPhase(0.5, sigmaS));
 
   PCShower pc;
   Scene scene;
   Film film(800, 800, 60);
-  //Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
-  Camera cam(film, {0, 14, 35}, {0, -0.4f, -1});
-  RayGenerator rGen(cam, 1);
+  Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
+  //Camera cam(film, {0, 14, 35}, {0, -0.4f, -1});
+  RayGenerator rGen(cam, 64);
+
+  //scene.addGlobalMedium(medium);
   //scene.addModel(nano);
   scene.addLight(light);
   //scene.addLight(envLight);
@@ -101,13 +105,12 @@ int main() {
   scene.addModel(bkg2);
   //scene.addModel(sphere);
   //scene.addModel(sphere2);
-  scene.addModel(sphere3);
+  //scene.addModel(sphere3);
   //scene.addModel(cube);
-  //scene.addMedium(medium, cam);
+  scene.addMedium(medium, false);
   //scene.addModel(cube2);
 
   scene.init();
-  scene.coverCameraMedium = medium;
 
   //nano.toPointClouds(pc, 1e4, glm::vec3(1.0f));
   //bkg.toPointClouds(pc, 3e4, glm::vec3(0.4, 0.6, 0.1));
@@ -125,7 +128,7 @@ int main() {
   PathIntegrator integrator;
   
   integrator.render(rGen, scene, film);
-  film.generateImage("/home/yession/Code/Cpp/ycr/img/glass_fb2.jpg");
+  film.generateImage("/home/yession/Code/Cpp/ycr/img/glass_fb4.jpg");
   film.clear();
 
   //integrator.visualizeRender(pc, rGen, scene, film);

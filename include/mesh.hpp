@@ -17,7 +17,8 @@ protected:
 
 public:
   BXDF* bxdf = nullptr;
-  Medium* medium = nullptr;
+  Medium* mediumInside = nullptr;
+  Medium* mediumOutside = nullptr;
   Light* light = nullptr; //if null, it is not emissive
 
   virtual ~Mesh() {delete bxdf; delete light;} //

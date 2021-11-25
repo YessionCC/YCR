@@ -35,15 +35,12 @@ public:
 
   inline int getType() const {return type;}
 
-  // return brdf
+  // return brdf*|cos|
   virtual glm::vec3 evaluate(
     const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) = 0;
   // return brdf*|cos|/pdf (to reduce unneccessary calc)
   // this func directly calc beta(as pbrt)
   virtual glm::vec3 sample_ev(
-    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) = 0;
-  // return pdf
-  virtual float sample(
     const Intersection& itsc, const Ray& ray_o, Ray& ray_i) = 0;
 };
 
@@ -60,8 +57,26 @@ public:
     const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) override;
   glm::vec3 sample_ev(
     const Intersection& itsc, const Ray& ray_o, Ray& ray_i) override;
-  float sample(
-    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) override;
+};
+
+/************************NoFrSpecular******************************/
+
+class PureTransmission: public BXDF { // for no surface medium
+public:
+  PureTransmission(): 
+    BXDF(BXDFType::DELTA|BXDFType::TRANSMISSION|BXDFType::MEDIUM) {}
+
+  inline glm::vec3 evaluate(
+    const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) override {
+    return glm::vec3(0.0f);
+  }
+
+  glm::vec3 sample_ev(
+    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) override {
+    ray_i.o = ray_o.o;
+    ray_i.d = -ray_o.d;
+    return glm::vec3(1.0f);
+  }
 };
 
 /************************NoFrSpecular******************************/
@@ -80,9 +95,6 @@ public:
   }
 
   glm::vec3 sample_ev(
-    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) override;
-
-  float sample(
     const Intersection& itsc, const Ray& ray_o, Ray& ray_i) override;
 };
 
@@ -110,9 +122,6 @@ public:
 
   glm::vec3 sample_ev(
     const Intersection& itsc, const Ray& ray_o, Ray& ray_i) override;
-
-  float sample(
-    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) override;
 };
 
 /************************HenyeyPhase******************************/
@@ -123,16 +132,7 @@ private:
   glm::vec3 sigmaS;
 
 private:
-  inline float samplePhaseCosTheta() const { //
-    float cosTheta;
-    float u = SampleShape::sampler().get1();
-    if(glm::abs(g) < 1e-3) cosTheta = 1.f-2.f*u;
-    else {
-      float t = (1-g*g)/(1-g+2*g*u);
-      cosTheta = (1+g*g-t*t)/(2*g);
-    }
-    return cosTheta;
-  }
+  float samplePhaseCosTheta() const;
 
 public:
   HenyeyPhase(float g, glm::vec3 sigmaS): BXDF(BXDFType::MEDIUM), 
@@ -147,10 +147,4 @@ public:
 
   glm::vec3 sample_ev(
     const Intersection& itsc, const Ray& ray_o, Ray& ray_i);
-
-  float sample(
-    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) {
-    std::cout<<"ERROR: HenyeyPhase::sample do not implement!"<<std::endl;
-    return 1.0f;
-  }
 };

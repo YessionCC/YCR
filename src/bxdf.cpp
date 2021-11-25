@@ -2,7 +2,8 @@
 
 glm::vec3 LambertianDiffuse::evaluate(
   const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) {
-  return INV_PI*texture->tex2D(itsc.itscVtx.uv);
+  float cosTheta = glm::max(0.0f, itsc.itscVtx.cosTheta(ray_i.d));
+  return cosTheta * INV_PI*texture->tex2D(itsc.itscVtx.uv);
 }
 
 glm::vec3 LambertianDiffuse::sample_ev(
@@ -17,30 +18,11 @@ glm::vec3 LambertianDiffuse::sample_ev(
   return texture->tex2D(itsc.itscVtx.uv);
 }
 
-float LambertianDiffuse::sample(
-  const Intersection& itsc, const Ray& ray_o, Ray& ray_i) {
-  glm::vec2 dir_i = SampleShape::sampler().uniSampleDisk();
-  glm::vec3 tanp(
-    glm::sqrt(1-glm::min(1.0f, dir_i.x*dir_i.x)), 
-    dir_i.x*glm::cos(dir_i.y), 
-    dir_i.x*glm::sin(dir_i.y));
-  ray_i.o = itsc.itscVtx.position;
-  ray_i.d = itsc.toWorldSpace(tanp);
-  return INV_PI*glm::cos(dir_i.x);
-}
-
 glm::vec3 NoFrSpecular::sample_ev(
   const Intersection& itsc, const Ray& ray_o, Ray& ray_i) {
   ray_i.o = itsc.itscVtx.position;
   ray_i.d = Reflect(ray_o.d, itsc.itscVtx.normal);
   return absorb->tex2D(itsc.itscVtx.uv);
-}
-
-float NoFrSpecular::sample(
-  const Intersection& itsc, const Ray& ray_o, Ray& ray_i) {
-  ray_i.o = itsc.itscVtx.position;
-  ray_i.d = Reflect(ray_o.d, itsc.itscVtx.normal);
-  return 1.0f;
 }
 
 glm::vec3 GlassSpecular::sample_ev(
@@ -70,22 +52,15 @@ glm::vec3 GlassSpecular::sample_ev(
   }
 }
 
-float GlassSpecular::sample(
-  const Intersection& itsc, const Ray& ray_o, Ray& ray_i) {
-  ray_i.o = itsc.itscVtx.position;
-  float cosThetaI = itsc.itscVtx.cosTheta(ray_o.d);
-  float cosThetaT; float et = eataT, ei = eataI;
-  glm::vec3 normal(itsc.itscVtx.normal);
-  if(cosThetaI < 0) {
-    std::swap(et, ei);
-    normal = -normal;
-  }
-  bool res = Refract(ray_o.d, normal, ei, et, ray_i.d, cosThetaT);
-  if(res) return 1.0f;
-  float fr = FrDielectric(cosThetaI, cosThetaT, ei, et);
+inline float HenyeyPhase::samplePhaseCosTheta() const { //
+  float cosTheta;
   float u = SampleShape::sampler().get1();
-  if(u < fr) return fr;
-  else return 1.0f - fr;
+  if(glm::abs(g) < 1e-3) cosTheta = 1.f-2.f*u;
+  else {
+    float t = (1-g*g)/(1-g+2*g*u);
+    cosTheta = (1+g*g-t*t)/(2*g);
+  }
+  return cosTheta;
 }
 
 glm::vec3 HenyeyPhase::sample_ev(

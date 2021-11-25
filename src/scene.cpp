@@ -14,6 +14,7 @@ void Scene::init() {
 }
 
 void Scene::addModel(Model& model) {
+  model.setMediumForAllMeshes(globalMedium, false);
   model.toPrimitives(primitives);
 }
 
@@ -22,20 +23,13 @@ void Scene::addLight(Light* light) {
   lights.push_back(light);
 }
 
-// not very robust
-bool Scene::isPointInModel(glm::vec3 p, const Model& model) {
-  Ray ray; ray.o = p; ray.d = {0,0,1};
-  Intersection itsc = intersect(ray);
-  if(model.hasMesh(itsc.prim->getMesh()) &&
-    itsc.geoNormal.z > 0) return true;
-  return true;
+void Scene::addMedium(Medium* medium, bool noBXDF) {
+  medium->addToScene(*this, noBXDF);
 }
 
-void Scene::addMedium(Medium* medium, const Camera& cam) {
-  medium->addToScene(*this);
-  // if(isPointInModel(cam.getPosition(), medium->getBound()))
-  //   this->coverCameraMedium = medium;
-  // else this->coverCameraMedium = nullptr;
+// global medium must add before all model
+void Scene::addGlobalMedium(Medium* medium) {
+  this->globalMedium = medium;
 }
 
 void Scene::addPrimitive(Primitive* prim) {
@@ -118,63 +112,34 @@ bool Scene::occlude(const Ray& ray, float t_limit, const Primitive* prim_avd) {
 // For volume direct light test
 // medium: the medium the ray.o in
 bool Scene::occlude(const Ray& ray, float t_limit, glm::vec3& tr,
-  Medium* medium, const Primitive* prim_avd) {
+  const Medium* medium, const Primitive* prim_avd) {
 
+  tr = glm::vec3(1.0f);
   Intersection itsc;
   Ray testRay = ray;
-  tr = glm::vec3(1.0f);
-  int loopcnt = 0;
-  while(true) {
-    loopcnt ++;
-    // numerical error can not avoid, must limit loop times
-    if(loopcnt >= 16) {
-      std::cout<<"Warning: abnormal loop detect: "<<itsc.t<<std::endl;
-      return true;
-    }
+  for(int bounce = 0; bounce < 24; bounce++) { // limit test times
     itsc.t = t_limit;
-    itsc = intersect(testRay, prim_avd);
-    if(medium) {
-      if(!itsc.prim) {
-        tr *= medium->tr(t_limit);
-        return false; // light is in the medium and no occlude
-      }
-      else {
-        if(itsc.prim->getMesh()->medium) {
-          tr *= medium->tr(itsc.t);
-          medium = nullptr;
-          t_limit -= itsc.t;
-          testRay.o = itsc.itscVtx.position;
-          itsc.maxErrorOffset(testRay.d, testRay.o);
-        }
-        else {
-          
-          if(itsc.prim->getMesh()->getType()==Mesh::MeshType::CustomMesh) {
-            int a = 0;
-            tr *= glm::vec3(-1000);
-          }
-          return true; // something occlude in medium
-        }
-          
-      }
+    itsc = intersect(testRay, nullptr);
+    if(medium) tr*=medium->tr(itsc.t);
+    // if no itsc, it can only be caused by numerical error
+    // when this case, the light have itsc in fact
+    if(!itsc.prim || itsc.prim == prim_avd) return false;
+    Mesh* mesh = itsc.prim->getMesh();
+    if(_HasType(mesh->getType(), MEDIUM)) {
+      t_limit -= itsc.t;
+      testRay.o = itsc.itscVtx.position;
+      itsc.maxErrorOffset(testRay.d, testRay.o);
+      if(itsc.cosTheta(testRay.d) < 0) medium = mesh->mediumInside;
+      else medium = mesh->mediumOutside;
     }
-    else {
-      if(!itsc.prim) return false; // light isn't in the medium and no occlude
-      else {
-        medium = itsc.prim->getMesh()->medium;
-        if(medium) {
-          t_limit -= itsc.t;
-          testRay.o = itsc.itscVtx.position;
-          itsc.maxErrorOffset(testRay.d, testRay.o);
-        }
-        else return true;
-      }
-    }
+    else return true;
   }
-  std::cout << "WARNING: Scene::occlude abnormal return"<<std::endl;
+  std::cout<<"Scene::Occlude: Lots of test, "
+    "may caused bu complex model or numerical error"<<std::endl;
   return true;
 }
 
 bool Scene::occlude(const Intersection& it1, const Intersection& it2, 
   Ray& testRay, float& rayLen) {
     return bvh.occlude(it1, it2, testRay, rayLen);
-  }
+}

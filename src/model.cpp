@@ -48,13 +48,6 @@ void Model::addMesh(Mesh* mesh) {
   meshes.push_back(mesh);
 }
 
-bool Model::hasMesh(Mesh* mesh) const{
-  for(Mesh* m: meshes) {
-    if(m == mesh) return true;
-  }
-  return false;
-}
-
 void Model::translate(glm::vec3 translate) {
   for(Mesh* mesh: meshes) {
     mesh->translate(translate);
@@ -101,8 +94,10 @@ void Model::setLightForAllMeshes(Light* light) {
   for(Mesh* mesh: meshes) mesh->light = light;
 }
 
-void Model::setMediumForAllMeshes(Medium* medium) {
-  for(Mesh* mesh: meshes) mesh->medium = medium;
+// set Medeium(default inside medium)
+void Model::setMediumForAllMeshes(Medium* medium, bool isInside) {
+  if(isInside) for(Mesh* mesh: meshes) mesh->mediumInside = medium;
+  else for(Mesh* mesh: meshes) mesh->mediumOutside = medium;
 }
 
 void Model::processNode(aiNode *node, const aiScene *scene){

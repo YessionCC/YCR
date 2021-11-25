@@ -7,11 +7,13 @@
 #include "scene.hpp"
 #include "bxdf.hpp"
 #include "camera.hpp"
+#include "medium.hpp"
 
 struct PathVertex {
   Intersection itsc;
-  glm::vec3 beta;
+  const Medium* inMedium;
   glm::vec3 dir_o;
+  glm::vec3 beta;
   int bxdfType;
 };
 
