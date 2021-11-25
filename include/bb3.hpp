@@ -32,28 +32,29 @@ public:
     return *this;
   }
 
-  inline glm::vec3 getRelativePos(const glm::vec3 pos) { // world pos -> pos relative in bb3(0~1)
+  // world pos -> pos relative in bb3(0~1)
+  inline glm::vec3 getRelativePos(const glm::vec3 pos) const{ 
     return (pos - pMin)/(pMax - pMin);
   }
 
-  inline float getSurfaceArea() {
+  inline float getSurfaceArea() const{
     glm::vec3 t = pMax-pMin;
     return 2*(t.x*t.y+t.x*t.z+t.y*t.z);
   }
 
-  inline float getVolume() {
+  inline float getVolume() const{
     glm::vec3 t = pMax-pMin;
     return t.x*t.y*t.z;
   }
 
-  inline int getMaxAxis() { 
+  inline int getMaxAxis() const{ 
     glm::vec3 t = pMax-pMin;
     if(t.x > t.y && t.x>t.z) return 0;
     if(t.y > t.z) return 1;
     return 2;
   }
 
-  inline void getAxisOrder(int *ord) {
+  inline void getAxisOrder(int *ord) const{
     glm::vec3 t = pMax-pMin;
     if(t.x>t.y) {
       if(t.y>t.z) ord[0]=0, ord[1]=1, ord[2] = 2;
@@ -67,15 +68,15 @@ public:
     }
   }
 
-  inline glm::vec3 getCenter() {
+  inline glm::vec3 getCenter() const{
     return 0.5f*(pMin+pMax);
   }
 
-  inline float getDiagonalLength() {
+  inline float getDiagonalLength() const{
     return glm::length(pMax - pMin);
   }
 
-  inline void get8Cornor(glm::vec3* cs) {
+  inline void get8Cornor(glm::vec3* cs) const{
     cs[0] = pMin;
     cs[1] = glm::vec3(pMin.x, pMax.y, pMin.z);
     cs[2] = glm::vec3(pMax.x, pMax.y, pMin.z);
@@ -86,7 +87,7 @@ public:
     cs[7] = glm::vec3(pMax.x, pMin.y, pMax.z);
   }
 
-  inline bool intersect(const Ray& ray, float& tMin, float& tMax){
+  inline bool intersect(const Ray& ray, float& tMin, float& tMax) const{
     tMin = FLOAT_MIN, tMax = FLOAT_MAX;
     return itsc_help(ray, tMin, tMax, 0) &&
       itsc_help(ray, tMin, tMax, 1) &&
@@ -95,7 +96,7 @@ public:
   }
   
 private:
- inline bool itsc_help(const Ray& ray, float& tMin, float& tMax, int axis) {
+ inline bool itsc_help(const Ray& ray, float& tMin, float& tMax, int axis) const{
     if(std::abs(ray.d[axis])<CUSTOM_EPSILON) {
       if(ray.o[axis]>pMax[axis] || ray.o[axis]<pMin[axis])
         return false;

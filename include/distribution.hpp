@@ -17,7 +17,7 @@ private:
 public:
   DiscreteDistribution1D(){}
   // will calc pdf
-  DiscreteDistribution1D(std::vector<float>& pdf): cdf(pdf) {
+  DiscreteDistribution1D(const std::vector<float>& pdf): cdf(pdf) {
     calcCdf();
   }
   DiscreteDistribution1D(int num) {
@@ -62,7 +62,7 @@ public:
     return idx;
   }
 
-  float getSumPdf() const {return sum_pdf;}
+  inline float getSumPdf() const {return sum_pdf;}
 
 };
 

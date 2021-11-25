@@ -39,7 +39,7 @@ int BVH::buildSAHBVH(int start, int end, int deep) {
     
   int axis = totbb3.getMaxAxis();
   std::sort(prims.begin()+start, prims.begin()+end, 
-    [axis](Primitive* p1, Primitive* p2){
+    [axis](const Primitive* p1, const Primitive* p2){
       return p1->getCenter()[axis]<p2->getCenter()[axis];});
   float invCalc = 1.0f/(totbb3.getSurfaceArea()*nPrims);
 
@@ -77,9 +77,9 @@ int BVH::buildSAHBVH(int start, int end, int deep) {
 }
 
 void BVH::intersect(const Ray& ray, Intersection& itsc, 
-  int nIdx, const Primitive* prim) {
+  int nIdx, const Primitive* prim) const{
 
-  BVHNode& curNode = bvhNodes[nIdx];
+  const BVHNode& curNode = bvhNodes[nIdx];
   float tMin, tMax;
   if(curNode.bb3.intersect(ray, tMin, tMax)) {
     if(itsc.t < tMin) return;
@@ -96,8 +96,8 @@ void BVH::intersect(const Ray& ray, Intersection& itsc,
   }
 } 
 
-bool BVH::intersectTest(const Ray& ray, int nIdx, const Primitive* prim) {
-  BVHNode& curNode = bvhNodes[nIdx];
+bool BVH::intersectTest(const Ray& ray, int nIdx, const Primitive* prim) const{
+  const BVHNode& curNode = bvhNodes[nIdx];
   float tMin, tMax;
   if(curNode.bb3.intersect(ray, tMin, tMax)) {
     if(curNode.lft == -1 && curNode.rgt == -1) { //leaf
@@ -126,7 +126,7 @@ void BVH::generatePointCloud(PCShower& pc) {
 // return false: no occlude
 // return testRay(it1->it2) and its length
 bool BVH::occlude(const Intersection& it1, const Intersection& it2, 
-  Ray& testRay, float& rayLen) {
+  Ray& testRay, float& rayLen) const {
 
   testRay.o = it1.itscVtx.position;
   glm::vec3 dir = it2.itscVtx.position - it1.itscVtx.position;

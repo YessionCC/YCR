@@ -3,7 +3,7 @@
 #include "scene.hpp"
 
 Medium::Medium(float sigmaT, glm::vec3 sigmaS, 
-  Model* model, BXDF* phaseFunc):
+  Model* model, const BXDF* phaseFunc):
   sigmaT(sigmaT), sigmaS(sigmaS),
   bound(model), phaseFunc(phaseFunc) {
 

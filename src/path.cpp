@@ -3,7 +3,7 @@
 #include "debug/analyse.hpp"
 
 int SubPathGenerator::createSubPath(
-  const Ray& start_ray, Scene& scene, 
+  const Ray& start_ray, const Scene& scene, 
   int max_bounce) {
 
   Ray ray = start_ray, sampleRay;
@@ -27,8 +27,8 @@ int SubPathGenerator::createSubPath(
       return bounce;
     }
 
-    Mesh* mesh = itsc.prim->getMesh();
-    BXDF* bxdf = mesh->bxdf;
+    const Mesh* mesh = itsc.prim->getMesh();
+    const BXDF* bxdf = mesh->bxdf;
 
     if(mesh->light) { // handle dirac light
       if(bounce == 0 || _HasType(pathVertices[bounce-1].bxdfType, DELTA)) {
@@ -66,7 +66,7 @@ int SubPathGenerator::createSubPath(
   return max_bounce;
 }
 
-void PathIntegrator::render(RayGenerator& rayGen, Scene& scene, Film& film) {
+void PathIntegrator::render(RayGenerator& rayGen, const Scene& scene, Film& film) {
 
   Ray ray; glm::vec2 rasPos;
   auto& pathVtxs = subPathGenerator.getPathVtxs();
@@ -83,7 +83,7 @@ void PathIntegrator::render(RayGenerator& rayGen, Scene& scene, Film& film) {
     //__EndTimeAnalyse__
 
     Ray rayToLight, lastRay;
-    Intersection litsc; Light* lt; float len;
+    Intersection litsc; const Light* lt; float len;
     glm::vec3 radiance = subPathGenerator.getDiracLight(), tr = glm::vec3(1.0f);
 
     //__StartTimeAnalyse__("dirlight")
@@ -117,7 +117,7 @@ void PathIntegrator::render(RayGenerator& rayGen, Scene& scene, Film& film) {
       rayToLight.o = pathVtxs[i].itsc.itscVtx.position;
       rayToLight.d = dirToLight;
 
-      Mesh* mesh = pathVtxs[i].itsc.prim->getMesh();
+      const Mesh* mesh = pathVtxs[i].itsc.prim->getMesh();
 
       //if(scene.occlude(rayToLight, len, litsc.prim)) continue; 
       if(scene.occlude(rayToLight, len, tr, pathVtxs[i].inMedium, litsc.prim)) 
@@ -127,7 +127,7 @@ void PathIntegrator::render(RayGenerator& rayGen, Scene& scene, Film& film) {
       float invdis2 = 1.0f/(len*len);
       glm::vec3 leCosDivR2 = 
         invdis2*lt->evaluate(litsc, -rayToLight.d);
-      BXDF* lastBxdf = mesh->bxdf;
+      const BXDF* lastBxdf = mesh->bxdf;
       if(!lastBxdf) continue; //
       lastRay.o = rayToLight.o;
       lastRay.d = pathVtxs[i].dir_o;
@@ -184,7 +184,7 @@ void PathIntegrator::visualizeRender(
       continue;
     }
 
-    Intersection litsc; Ray rayToLight; Light* lt; float len;
+    Intersection litsc; Ray rayToLight; const Light* lt; float len;
     for(unsigned int i = 0; i<pathVtxs.size(); i++) {
 
       if(_HasType(pathVtxs[i].bxdfType, DELTA)) continue;

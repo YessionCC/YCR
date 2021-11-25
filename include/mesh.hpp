@@ -16,10 +16,10 @@ protected:
   MeshType type;
 
 public:
-  BXDF* bxdf = nullptr;
-  Medium* mediumInside = nullptr;
-  Medium* mediumOutside = nullptr;
-  Light* light = nullptr; //if null, it is not emissive
+  const BXDF* bxdf = nullptr;
+  const Medium* mediumInside = nullptr;
+  const Medium* mediumOutside = nullptr;
+  const Light* light = nullptr; //if null, it is not emissive
 
   virtual ~Mesh() {delete bxdf; delete light;} //
   Mesh(MeshType type): type(type) {}
@@ -29,7 +29,7 @@ public:
   virtual void translate(glm::vec3) = 0;
   virtual void scale(glm::vec3) = 0;
   virtual void rotate(glm::vec3, float) = 0;
-  virtual void toPrimitives(std::vector<Primitive*>& vp) = 0;
+  virtual void toPrimitives(std::vector<const Primitive*>& vp) = 0;
 };
 
 class VertexMesh: public Mesh {
@@ -51,7 +51,7 @@ public:
   void rotate(glm::vec3, float) override;
 
   // vp: all prims, vl: light(emission) prims
-  void toPrimitives(std::vector<Primitive*>& vp) override;
+  void toPrimitives(std::vector<const Primitive*>& vp) override;
 
   static VertexMesh* CreateTriangle(glm::vec3 pos[3]);
   static VertexMesh* CreateRectangle(glm::vec3 pos[4]);
@@ -70,7 +70,7 @@ public:
   void rotate(glm::vec3, float) override;
 
   // vp: all prims, vl: light(emission) prims
-  void toPrimitives(std::vector<Primitive*>& vp) override;
+  void toPrimitives(std::vector<const Primitive*>& vp) override;
 
   static CustomMesh* CreateSphere(glm::vec3 center, float radius);
   static CustomMesh* CreatePoint(glm::vec3 pos);

@@ -15,23 +15,23 @@ struct BVHNode {
 
 class BVH {
 private:
-  std::vector<Primitive*> & prims; // from scene
+  std::vector<const Primitive*> & prims; // from scene
   std::vector<BVHNode> bvhNodes;
   int maxDeep, maxPrimsInNode; // if maxDeep == -1, deep no restriction
 public:
-  BVH(std::vector<Primitive*> & primitives, int maxDeep = 15, int maxPrimsInNode = 8): 
+  BVH(std::vector<const Primitive*> & primitives, int maxDeep = 15, int maxPrimsInNode = 8): 
     prims(primitives), maxDeep(maxDeep), maxPrimsInNode(maxPrimsInNode){}
   int buildSAHBVH(int start, int end, int deep);
 
   void intersect(const Ray& ray, Intersection& itsc, 
-    int nIdx, const Primitive* prim = nullptr);
-  bool intersectTest(const Ray& ray, int nIdx, const Primitive* prim = nullptr);
+    int nIdx, const Primitive* prim = nullptr) const;
+  bool intersectTest(const Ray& ray, int nIdx, const Primitive* prim = nullptr) const;
   bool occlude(const Intersection& it1, const Intersection& it2, 
-  Ray& testRay, float& rayLen);
+    Ray& testRay, float& rayLen) const;
   // For Debug, after build BVH
   void generatePointCloud(PCShower& pc);
   BB3 getWholeBound() const;
 
-  const std::vector<Primitive*> & getPrims() const {return prims;}
-  const std::vector<BVHNode> & getNodes() const {return bvhNodes;}
+  inline const std::vector<const Primitive*> & getPrims() const {return prims;}
+  inline const std::vector<BVHNode> & getNodes() const {return bvhNodes;}
 };

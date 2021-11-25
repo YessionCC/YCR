@@ -39,7 +39,7 @@ Model* Model::copy() {
 }
 
 // need to release ptr explicitly
-void Model::toPrimitives(std::vector<Primitive*>& vp) {
+void Model::toPrimitives(std::vector<const Primitive*>& vp) const {
   for(Mesh* mesh : meshes)
     mesh->toPrimitives(vp);
 }
@@ -86,16 +86,16 @@ bool Model::loadFromFile(const char* filename){
   return true;
 }
 
-void Model::setBxdfForAllMeshes(BXDF* bxdf) {
+void Model::setBxdfForAllMeshes(const BXDF* bxdf) {
   for(Mesh* mesh: meshes) mesh->bxdf = bxdf;
 }
 
-void Model::setLightForAllMeshes(Light* light) {
+void Model::setLightForAllMeshes(const Light* light) {
   for(Mesh* mesh: meshes) mesh->light = light;
 }
 
 // set Medeium(default inside medium)
-void Model::setMediumForAllMeshes(Medium* medium, bool isInside) {
+void Model::setMediumForAllMeshes(const Medium* medium, bool isInside) {
   if(isInside) for(Mesh* mesh: meshes) mesh->mediumInside = medium;
   else for(Mesh* mesh: meshes) mesh->mediumOutside = medium;
 }
@@ -111,10 +111,10 @@ void Model::processNode(aiNode *node, const aiScene *scene){
 }
 
 void Model::toPointClouds(PCShower& pc, int tot_pcn, glm::vec3 col) {
-  std::vector<Primitive*> vp;
+  std::vector<const Primitive*> vp;
   toPrimitives(vp);
   DiscreteDistribution1D dt;
-  for(Primitive* p: vp) {
+  for(const Primitive* p: vp) {
     dt.addPdf(p->getArea());
   }
   dt.calcCdf();

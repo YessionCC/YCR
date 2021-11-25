@@ -26,7 +26,7 @@ private:
   float selectP;
   Model& model;
   DiscreteDistribution1D dist;
-  std::vector<Primitive*> vp;
+  std::vector<const Primitive*> vp;
 
 public:
   ShapeLight(glm::vec3 le, Model& shape);
@@ -97,7 +97,7 @@ public:
 
 class EnvironmentLight: public Light { 
 private:  
-  Texture* environment;
+  const Texture* environment;
   float sceneDiameter;
   float avgLuminance;
   float lumiScale;
@@ -106,7 +106,7 @@ private:
 
 public:
   // le falloff by default square relationship
-  EnvironmentLight(Texture* tex, float scale = 1.0f);
+  EnvironmentLight(const Texture* tex, float scale = 1.0f);
 
   void addToScene(Scene& scene);
 

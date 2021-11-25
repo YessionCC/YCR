@@ -35,7 +35,7 @@ private:
 public: 
   // return real bounce
   // TODO: Russia Roulette for BDPT ?
-  int createSubPath(const Ray& start_ray, Scene& scene, int max_bounce);
+  int createSubPath(const Ray& start_ray, const Scene& scene, int max_bounce);
 
   void clear() {
     diracRadiance = glm::vec3(0.0f);
@@ -43,11 +43,11 @@ public:
     tstate = TerminateState::None;
   }
 
-  std::vector<PathVertex>& getPathVtxs() {return pathVertices;}
+  inline std::vector<PathVertex>& getPathVtxs() {return pathVertices;}
 
-  TerminateState getTerminateState() const {return tstate;}
+  inline TerminateState getTerminateState() const {return tstate;}
 
-  glm::vec3 getDiracLight() const {return diracRadiance;}
+  inline glm::vec3 getDiracLight() const {return diracRadiance;}
 };
 
 class PathIntegrator {
@@ -58,7 +58,7 @@ private:
   SubPathGenerator subPathGenerator;
 
 public:
-  void render(RayGenerator& rayGen, Scene& scene, Film& film);
+  void render(RayGenerator& rayGen, const Scene& scene, Film& film);
   void visualizeRender(PCShower& pc, RayGenerator& rayGen, 
     Scene& scene, Film& film);
 };

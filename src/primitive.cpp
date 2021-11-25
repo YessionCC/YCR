@@ -9,7 +9,7 @@
 
 /**********************Triangle******************************/
 
-Triangle::Triangle(Vertex* v1, Vertex* v2, Vertex* v3, Mesh* mesh) {
+Triangle::Triangle(Vertex* v1, Vertex* v2, Vertex* v3, const Mesh* mesh) {
   verts[0] = v1;
   verts[1] = v2;
   verts[2] = v3;
@@ -26,7 +26,7 @@ BB3 Triangle::getBB3() const{
   return bb3;
 }
 
-Primitive* Triangle::copy(Mesh* _mesh) const {
+Primitive* Triangle::copy(const Mesh* _mesh) const {
   std::cout<< 
   "Warning, This method: Triangle::copy, should never be called, "
   "Triangle copy should based on Vertex not Primitive, "
@@ -36,7 +36,7 @@ Primitive* Triangle::copy(Mesh* _mesh) const {
   return prim;
 }
 
-float Triangle::getAPointOnSurface(Intersection& itsc) {
+float Triangle::getAPointOnSurface(Intersection& itsc) const {
   itsc.localUV = SampleShape::sampler().uniSampleTriangle();
   itsc.prim = this;
   handleItscResult(itsc);
@@ -45,7 +45,7 @@ float Triangle::getAPointOnSurface(Intersection& itsc) {
 
 // Triangle::intersect will set localUV, because it's easier
 // to calc params from localUV
-void Triangle::intersect(const Ray& ray, Intersection& itsc) { //Mollor method
+void Triangle::intersect(const Ray& ray, Intersection& itsc) const { //Mollor method
   glm::vec3 v0v1 = verts[1]->position - verts[0]->position;
   glm::vec3 v0v2 = verts[2]->position - verts[0]->position;
   glm::vec3 pvec = glm::cross(ray.d, v0v2);
@@ -161,7 +161,7 @@ void Triangle::rotate(glm::vec3, float) {
 
 /**********************Sphere******************************/
 
-Primitive* Sphere::copy(Mesh* _mesh) const {
+Primitive* Sphere::copy(const Mesh* _mesh) const {
   return new Sphere(this->center, this->radius, _mesh);
 }
 
@@ -192,7 +192,7 @@ void Sphere::calcItscInfoFromNormal(Intersection& itsc, glm::vec3 normal) const{
 }
 
 // return pdf
-float Sphere::getAPointOnSurface(Intersection& itsc){
+float Sphere::getAPointOnSurface(Intersection& itsc) const {
   glm::vec3 pos = uniSampleSphereDir();
   itsc.prim = this;
   itsc.itscVtx.normal = pos;
@@ -204,7 +204,7 @@ float Sphere::getAPointOnSurface(Intersection& itsc){
 // notice: itsc as in-out variable
 // Sphere::intersect set itsc.position directly
 // because its easier to calc normal and other params from pos
-void Sphere::intersect(const Ray& ray, Intersection& itsc){
+void Sphere::intersect(const Ray& ray, Intersection& itsc) const {
   glm::vec3 so = ray.o - this->center;
   // t*t+b*t+c = 0
   float b = 2.0f*glm::dot(ray.d, so);

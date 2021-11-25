@@ -8,7 +8,7 @@ ShapeLight::ShapeLight(glm::vec3 le, Model& shape): le(le), model(shape) {
 void ShapeLight::addToScene(Scene& scene) {
   model.toPrimitives(vp);
   float totArea = 0;
-  for(Primitive* p: vp) {
+  for(const Primitive* p: vp) {
     float area = p->getArea();
     dist.addPdf(area);
     totArea += area;
@@ -28,7 +28,7 @@ glm::vec3 ShapeLight::evaluate(const Intersection& itsc, glm::vec3 dir) const {
 float ShapeLight::getItscOnLight(Intersection& itsc, glm::vec3 evaP) const {
   float pdf = 1.0f;
   int idx = dist.sample(pdf);
-  Primitive* prim = vp[idx];
+  const Primitive* prim = vp[idx];
   pdf*=prim->getAPointOnSurface(itsc);
   return pdf;
 }
@@ -41,11 +41,11 @@ float DirectionalLight::selectProbality(const Scene& scene) {
   return Luminance(le);
 }
 
-EnvironmentLight::EnvironmentLight(Texture* tex, float scale): 
+EnvironmentLight::EnvironmentLight(const Texture* tex, float scale): 
   environment(tex), lumiScale(scale) {
   if(tex->getType() == Texture::TexType::Image) {
     isSolid = false;
-    ImageTexture* imt = dynamic_cast<ImageTexture*>(environment);
+    const ImageTexture* imt = dynamic_cast<const ImageTexture*>(environment);
     avgLuminance = imt->generateDistribution2D(dd2d);
   }
   else if(tex->getType() == Texture::TexType::Solid) {

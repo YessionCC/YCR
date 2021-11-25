@@ -14,13 +14,13 @@
 
 class Scene {
 public:
-  EnvironmentLight* envLight = nullptr;
+  const EnvironmentLight* envLight = nullptr;
 private:
-  std::vector<Primitive*> primitives;
+  std::vector<const Primitive*> primitives;
   std::vector<Light*> lights;
   DiscreteDistribution1D ldistribution; // light distribution
   
-  Medium* globalMedium = nullptr;
+  const Medium* globalMedium = nullptr;
 
   BB3 sceneBB3;
   BVH bvh;
@@ -35,30 +35,30 @@ public:
   void addModel(Model& model);
   void addLight(Light* light);
   void addMedium(Medium* medium, bool noBXDF = true);
-  void addGlobalMedium(Medium* medium);
-  void addPrimitive(Primitive* prim);
-  void addPrimitives(std::vector<Primitive*> prims);
+  void addGlobalMedium(const Medium* medium);
+  void addPrimitive(const Primitive* prim);
+  void addPrimitives(std::vector<const Primitive*> prims);
 
   void init();
 
   // prim used to avoid intersect self when the scene do not have curve surface
-  Intersection intersect(const Ray& ray, const Primitive* prim = nullptr);
-  bool intersectTest(const Ray& ray, const Primitive* prim = nullptr);
+  Intersection intersect(const Ray& ray, const Primitive* prim = nullptr) const;
+  bool intersectTest(const Ray& ray, const Primitive* prim = nullptr) const;
 
   bool occlude(const Ray& ray, float t_limit, glm::vec3& tr,
-    const Medium* medium = nullptr, const Primitive* prim_avd = nullptr);
+    const Medium* medium = nullptr, const Primitive* prim_avd = nullptr) const;
   bool occlude(const Ray& ray, float t_limit, 
-    const Primitive* prim_avd = nullptr);
+    const Primitive* prim_avd = nullptr) const;
   bool occlude(const Intersection& it1, const Intersection& it2, 
-  Ray& testRay, float& rayLen);
+    Ray& testRay, float& rayLen) const;
 
-  inline BVH& getBVH() {return bvh;}
   BB3 getWholeBound() const;
+  inline const BVH& getBVH() const {return bvh;}
   inline const Medium* getGlobalMedium() const {return globalMedium;}
 
   // return pdf
-  float sampleALight(Light*& light) const;
-  float dynamicSampleALight(Light*& light, glm::vec3 evap) const;
+  float sampleALight(const Light*& light) const;
+  float dynamicSampleALight(const Light*& light, glm::vec3 evap) const;
 
   // For Debug
   void saveBVHHierachyAsPointCloud(PCShower& pc);

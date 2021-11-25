@@ -36,7 +36,7 @@ public:
   }
 
   void saveSegLineAsPointCloud(PCShower& pc, float t, 
-    glm::vec3 col, int pNum = 20) {
+    glm::vec3 col, int pNum = 20) const{
     for(int i=0; i<pNum; i++) {
       pc.addItem(pass(t*i/pNum), col);
     }

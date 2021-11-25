@@ -1,13 +1,13 @@
 #include "bxdf.hpp"
 
 glm::vec3 LambertianDiffuse::evaluate(
-  const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) {
+  const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const {
   float cosTheta = glm::max(0.0f, itsc.itscVtx.cosTheta(ray_i.d));
   return cosTheta * INV_PI*texture->tex2D(itsc.itscVtx.uv);
 }
 
 glm::vec3 LambertianDiffuse::sample_ev(
-  const Intersection& itsc, const Ray& ray_o, Ray& ray_i) {
+  const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const {
   glm::vec2 dir_i = SampleShape::sampler().uniSampleDisk();
   glm::vec3 tanp(
     dir_i.x*glm::cos(dir_i.y), 
@@ -19,14 +19,14 @@ glm::vec3 LambertianDiffuse::sample_ev(
 }
 
 glm::vec3 NoFrSpecular::sample_ev(
-  const Intersection& itsc, const Ray& ray_o, Ray& ray_i) {
+  const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const {
   ray_i.o = itsc.itscVtx.position;
   ray_i.d = Reflect(ray_o.d, itsc.itscVtx.normal);
   return absorb->tex2D(itsc.itscVtx.uv);
 }
 
 glm::vec3 GlassSpecular::sample_ev(
-  const Intersection& itsc, const Ray& ray_o, Ray& ray_i) {
+  const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const {
   ray_i.o = itsc.itscVtx.position;
   float cosThetaI = itsc.itscVtx.cosTheta(ray_o.d);
   float cosThetaT; float et = eataT, ei = eataI;
@@ -64,7 +64,7 @@ inline float HenyeyPhase::samplePhaseCosTheta() const { //
 }
 
 glm::vec3 HenyeyPhase::sample_ev(
-  const Intersection& itsc, const Ray& ray_o, Ray& ray_i) {
+  const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const {
   float cosTheta = samplePhaseCosTheta();
   float sinTheta = glm::sqrt(1.0f - glm::min(1.0f, cosTheta*cosTheta));
   float phi = SampleShape::sampler().get1()*PI2;

@@ -21,13 +21,13 @@ public:
   glm::vec2 localUV;
   glm::vec3 itscError; // the error bound of the itsc point
   glm::vec3 geoNormal; // the real normal for the surface
-  Primitive* prim;
+  const Primitive* prim;
 
   Intersection(): t(FLOAT_MAX), localUV(0), 
     itscError(0), prim(nullptr) {}
 
   // NOTICE: make sure t > 0 !
-  inline void updateItscInfo(float t, Primitive* prim, const Ray& ray) {
+  inline void updateItscInfo(float t, const Primitive* prim, const Ray& ray) {
     if(t < this->t) {
       this->t = t;
       this->prim = prim;
@@ -36,7 +36,7 @@ public:
   }
 
   // NOTICE: make sure t > 0 !
-  inline void updateItscInfo(float t, Primitive* prim, glm::vec2 luv) {
+  inline void updateItscInfo(float t, const Primitive* prim, glm::vec2 luv) {
     if(t < this->t) {
       this->t = t;
       this->prim = prim;

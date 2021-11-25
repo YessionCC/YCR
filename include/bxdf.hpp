@@ -37,26 +37,26 @@ public:
 
   // return brdf*|cos|
   virtual glm::vec3 evaluate(
-    const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) = 0;
+    const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const = 0;
   // return brdf*|cos|/pdf (to reduce unneccessary calc)
   // this func directly calc beta(as pbrt)
   virtual glm::vec3 sample_ev(
-    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) = 0;
+    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const = 0;
 };
 
 /************************LambertianDiffuse******************************/
 
 class LambertianDiffuse: public BXDF {
 private:
-  Texture* texture;
+  const Texture* texture;
 
 public:
-  LambertianDiffuse(Texture* tex): BXDF(BXDFType::REFLECT), texture(tex) {}
+  LambertianDiffuse(const Texture* tex): BXDF(BXDFType::REFLECT), texture(tex) {}
 
   glm::vec3 evaluate(
-    const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) override;
+    const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const override;
   glm::vec3 sample_ev(
-    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) override;
+    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const override;
 };
 
 /************************NoFrSpecular******************************/
@@ -67,12 +67,12 @@ public:
     BXDF(BXDFType::DELTA|BXDFType::TRANSMISSION|BXDFType::MEDIUM) {}
 
   inline glm::vec3 evaluate(
-    const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) override {
+    const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const override {
     return glm::vec3(0.0f);
   }
 
   glm::vec3 sample_ev(
-    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) override {
+    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const override {
     ray_i.o = ray_o.o;
     ray_i.d = -ray_o.d;
     return glm::vec3(1.0f);
@@ -83,19 +83,19 @@ public:
 
 class NoFrSpecular: public BXDF {
 private:
-  Texture* absorb;
+  const Texture* absorb;
 
 public:
-  NoFrSpecular(Texture* tex): 
+  NoFrSpecular(const Texture* tex): 
     BXDF(BXDFType::DELTA|BXDFType::REFLECT), absorb(tex) {}
 
   inline glm::vec3 evaluate(
-    const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) override {
+    const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const override {
     return glm::vec3(0.0f);
   }
 
   glm::vec3 sample_ev(
-    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) override;
+    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const override;
 };
 
 /************************GlassSpecular******************************/
@@ -103,25 +103,25 @@ public:
 // Fr specular and Fr transimission
 class GlassSpecular: public BXDF {
 private:
-  Texture *absorbR, *absorbT; // reflect, transimission(refract)
+  const Texture *absorbR, *absorbT; // reflect, transimission(refract)
   float eataI, eataT; // I, often air, T, medium self
 
 public:
-  GlassSpecular(Texture* tex, float eataI, float eataT): 
+  GlassSpecular(const Texture* tex, float eataI, float eataT): 
     BXDF(BXDFType::DELTA|BXDFType::RTBoth), absorbR(tex), absorbT(tex),
     eataI(eataI), eataT(eataT) {}
 
-  GlassSpecular(Texture* texR, Texture* texT, float eataI, float eataT): 
+  GlassSpecular(const Texture* texR, const Texture* texT, float eataI, float eataT): 
     BXDF(BXDFType::DELTA), absorbR(texR), absorbT(texT),
     eataI(eataI), eataT(eataT) {}
 
   inline glm::vec3 evaluate(
-    const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) override {
+    const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const override {
     return glm::vec3(0.0f);
   }
 
   glm::vec3 sample_ev(
-    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) override;
+    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const override;
 };
 
 /************************HenyeyPhase******************************/
@@ -140,11 +140,11 @@ public:
 
   // return phase distribution value
   inline glm::vec3 evaluate(
-    const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) {
+    const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const {
     float cosTheta = glm::dot(ray_o.d, ray_i.d);
     return glm::vec3(0.25f*INV_PI*(1-g*g)/ (1+g*g+2*g*cosTheta));
   }
 
   glm::vec3 sample_ev(
-    const Intersection& itsc, const Ray& ray_o, Ray& ray_i);
+    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const ;
 };

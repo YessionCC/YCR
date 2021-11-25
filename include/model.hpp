@@ -35,13 +35,13 @@ public:
 
   Model* copy();
   bool loadFromFile(const char* filename);
-  void toPrimitives(std::vector<Primitive*>& vp);
+  void toPrimitives(std::vector<const Primitive*>& vp) const;
   void translate(glm::vec3 translate);
   void scale(glm::vec3 scale);
   void rotate(glm::vec3 axis, float angle);
-  void setBxdfForAllMeshes(BXDF* bxdf);
-  void setLightForAllMeshes(Light* light);
-  void setMediumForAllMeshes(Medium* medium, bool isInside = true);
+  void setBxdfForAllMeshes(const BXDF* bxdf);
+  void setLightForAllMeshes(const Light* light);
+  void setMediumForAllMeshes(const Medium* medium, bool isInside = true);
   void addMesh(Mesh* mesh);
 
   void toPointClouds(PCShower& pc, int tot_pcn, glm::vec3 col);

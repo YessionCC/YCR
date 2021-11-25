@@ -47,7 +47,7 @@ private:
   InterpolateMode mode;
   int width, height, channel, tot;
   glm::vec2 scale, offset;
-  unsigned char *img; // TODO: deconstruct
+  const unsigned char *img; // TODO: deconstruct
 
   const int dd2dSize = 64;
 

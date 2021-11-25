@@ -39,7 +39,7 @@ public:
     ray.d = cam2world_rot*camdir;
   }
 
-  glm::vec3 getPosition() const {return position;}
+  inline glm::vec3 getPosition() const {return position;}
 
   void visualizePointCloud(PCShower& pc, float distance, int pcn) {
     Ray r1, r2, r3, r4;
@@ -53,8 +53,8 @@ public:
     r4.saveSegLineAsPointCloud(pc, distance, glm::vec3(1.0f), pcn);
   }
 
-  int getReX() const {return film.getReX();}
-  int getReY() const {return film.getReY();}
+  inline int getReX() const {return film.getReX();}
+  inline int getReY() const {return film.getReY();}
 };
 
 class RayGenerator {

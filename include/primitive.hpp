@@ -14,14 +14,14 @@ class Mesh;
 
 class Primitive {
 protected:
-  Mesh* mesh;
+  const Mesh* mesh;
 
 public:
   virtual ~Primitive() {}
   Primitive() {}
-  Primitive(Mesh* mesh): mesh(mesh){}
+  Primitive(const Mesh* mesh): mesh(mesh){}
 
-  virtual Primitive* copy(Mesh* mesh) const = 0;
+  virtual Primitive* copy(const Mesh* mesh) const = 0;
 
   virtual BB3 getBB3() const = 0;
 
@@ -29,7 +29,7 @@ public:
   virtual void scale(glm::vec3) = 0;
   virtual void rotate(glm::vec3, float) = 0;
 
-  virtual inline Mesh* getMesh() const {return mesh;}
+  virtual inline const Mesh* getMesh() const {return mesh;}
 
   virtual inline glm::vec3 getCenter() const = 0;
 
@@ -38,10 +38,10 @@ public:
   //virtual void transform(glm::mat4x4) = 0;
 
   // return pdf
-  virtual float getAPointOnSurface(Intersection& itsc) = 0;
+  virtual float getAPointOnSurface(Intersection& itsc) const = 0;
 
   // notice: itsc as in-out variable
-  virtual void intersect(const Ray& ray, Intersection& itsc) = 0;
+  virtual void intersect(const Ray& ray, Intersection& itsc) const = 0;
 
   // just return whether intersect or not
   virtual bool intersectTest(const Ray& ray) const = 0;
@@ -62,13 +62,11 @@ private:
 
 public:
   Triangle() {}
-  Triangle(Vertex* v1, Vertex* v2, Vertex* v3, Mesh* mesh);
+  Triangle(Vertex* v1, Vertex* v2, Vertex* v3, const Mesh* mesh);
 
   BB3 getBB3() const;
 
-  Primitive* copy(Mesh* mesh) const;
-
-  inline Mesh* getMesh() const {return mesh;}
+  Primitive* copy(const Mesh* mesh) const;
 
   inline glm::vec3 getCenter() const {
     return (verts[0]->position+verts[1]->position+verts[2]->position)/3.0f;
@@ -85,10 +83,10 @@ public:
   void rotate(glm::vec3, float);
 
   // return pdf
-  float getAPointOnSurface(Intersection& itsc);
+  float getAPointOnSurface(Intersection& itsc) const;
 
   // notice: itsc as in-able
-  void intersect(const Ray& ray, Intersection& itsc);
+  void intersect(const Ray& ray, Intersection& itsc) const;
 
   // just return whether intersect or not
   bool intersectTest(const Ray& ray) const;
@@ -115,7 +113,7 @@ private:
 
 public:
   Sphere() {}
-  Sphere(glm::vec3 center, float radius, Mesh* mesh): 
+  Sphere(glm::vec3 center, float radius, const Mesh* mesh): 
     Primitive(mesh), center(center),
     up(0,1,0), right(1,0,0), forward(0,0,1), radius(radius){}
 
@@ -123,9 +121,7 @@ public:
     return BB3(center-glm::vec3(radius), center+glm::vec3(radius));
   }
 
-  Primitive* copy(Mesh* mesh) const;
-
-  inline Mesh* getMesh() const {return mesh;}
+  Primitive* copy(const Mesh* mesh) const;
 
   inline glm::vec3 getCenter() const {
     return center;
@@ -140,10 +136,10 @@ public:
   void rotate(glm::vec3, float);
 
   // return pdf
-  float getAPointOnSurface(Intersection& itsc);
+  float getAPointOnSurface(Intersection& itsc) const;
 
   // notice: itsc as in-out variable
-  void intersect(const Ray& ray, Intersection& itsc);
+  void intersect(const Ray& ray, Intersection& itsc) const;
 
   // just return whether intersect or not
   bool intersectTest(const Ray& ray) const;
@@ -163,9 +159,9 @@ private:
   glm::vec3 position;
 
 public:
-  PointPrim(glm::vec3 pos, Mesh* mesh): Primitive(mesh), position(pos) {}
+  PointPrim(glm::vec3 pos, const Mesh* mesh): Primitive(mesh), position(pos) {}
 
-  Primitive* copy(Mesh* _mesh) const {
+  Primitive* copy(const Mesh* _mesh) const {
     return new PointPrim(position, _mesh);
   }
 
@@ -188,14 +184,14 @@ public:
   virtual inline float getArea() const {return 0;}
 
   // return pdf
-  virtual float getAPointOnSurface(Intersection& itsc) {
+  virtual float getAPointOnSurface(Intersection& itsc) const{
     itsc.itscVtx.position = position;
     itsc.prim = this;
     return 1.0f;
   }
 
   // notice: itsc as in-out variable
-  virtual void intersect(const Ray& ray, Intersection& itsc) {
+  virtual void intersect(const Ray& ray, Intersection& itsc) const{
     std::cout<<"PointPrim::intersect is undefined"<<std::endl;
   }
 

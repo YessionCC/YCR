@@ -3,7 +3,7 @@
 #include <iostream>
 
 Scene::~Scene() {
-  for(Primitive* p: primitives)
+  for(const Primitive* p: primitives)
     delete p;
 }
 
@@ -28,14 +28,14 @@ void Scene::addMedium(Medium* medium, bool noBXDF) {
 }
 
 // global medium must add before all model
-void Scene::addGlobalMedium(Medium* medium) {
+void Scene::addGlobalMedium(const Medium* medium) {
   this->globalMedium = medium;
 }
 
-void Scene::addPrimitive(Primitive* prim) {
+void Scene::addPrimitive(const Primitive* prim) {
   primitives.push_back(prim);
 }
-void Scene::addPrimitives(std::vector<Primitive*> prims) {
+void Scene::addPrimitives(std::vector<const Primitive*> prims) {
   primitives.insert(primitives.end(), prims.begin(), prims.end());
 }
 
@@ -54,7 +54,7 @@ void Scene::saveBVHHierachyAsPointCloud(PCShower& pc) {
   bvh.generatePointCloud(pc);
 }
 
-float Scene::sampleALight(Light*& light) const{
+float Scene::sampleALight(const Light*& light) const{
   if(lights.size() == 1) {light = lights[0]; return 1.0f;}
   float pdf = 1.0f;
   int idx = ldistribution.sample(pdf);
@@ -64,7 +64,7 @@ float Scene::sampleALight(Light*& light) const{
 
 // estimate light distribution dynamically, using le*cosTheta/r2/pdf
 // when there are a lot of light, not recommend
-float Scene::dynamicSampleALight(Light*& light, glm::vec3 evap) const{
+float Scene::dynamicSampleALight(const Light*& light, glm::vec3 evap) const{
   if(lights.size() == 1) {light = lights[0]; return 1.0f;}
   Intersection litsc; glm::vec3 dir, L;
   DiscreteDistribution1D dd1d(lights.size());
@@ -86,7 +86,7 @@ BB3 Scene::getWholeBound() const{
   return bvh.getWholeBound();
 }
 
-Intersection Scene::intersect(const Ray& ray, const Primitive* prim) {
+Intersection Scene::intersect(const Ray& ray, const Primitive* prim) const {
   //__StartTimeAnalyse__("itsc_sub")
   Intersection itsc;
   bvh.intersect(ray, itsc, 0, prim);
@@ -97,12 +97,12 @@ Intersection Scene::intersect(const Ray& ray, const Primitive* prim) {
   return itsc;
 }
 
-bool Scene::intersectTest(const Ray& ray, const Primitive* prim) {
+bool Scene::intersectTest(const Ray& ray, const Primitive* prim) const {
   return bvh.intersectTest(ray, 0, prim);
 }
 
 // no volume direct test
-bool Scene::occlude(const Ray& ray, float t_limit, const Primitive* prim_avd) {
+bool Scene::occlude(const Ray& ray, float t_limit, const Primitive* prim_avd) const {
   Intersection itsc;
   itsc.t = t_limit;
   bvh.intersect(ray, itsc, 0, prim_avd);
@@ -112,7 +112,7 @@ bool Scene::occlude(const Ray& ray, float t_limit, const Primitive* prim_avd) {
 // For volume direct light test
 // medium: the medium the ray.o in
 bool Scene::occlude(const Ray& ray, float t_limit, glm::vec3& tr,
-  const Medium* medium, const Primitive* prim_avd) {
+  const Medium* medium, const Primitive* prim_avd) const {
 
   tr = glm::vec3(1.0f);
   Intersection itsc;
@@ -124,7 +124,7 @@ bool Scene::occlude(const Ray& ray, float t_limit, glm::vec3& tr,
     // if no itsc, it can only be caused by numerical error
     // when this case, the light have itsc in fact
     if(!itsc.prim || itsc.prim == prim_avd) return false;
-    Mesh* mesh = itsc.prim->getMesh();
+    const Mesh* mesh = itsc.prim->getMesh();
     if(_HasType(mesh->getType(), MEDIUM)) {
       t_limit -= itsc.t;
       testRay.o = itsc.itscVtx.position;
@@ -140,6 +140,6 @@ bool Scene::occlude(const Ray& ray, float t_limit, glm::vec3& tr,
 }
 
 bool Scene::occlude(const Intersection& it1, const Intersection& it2, 
-  Ray& testRay, float& rayLen) {
+  Ray& testRay, float& rayLen) const {
     return bvh.occlude(it1, it2, testRay, rayLen);
 }
