@@ -57,28 +57,39 @@ public:
   inline int getReY() const {return film.getReY();}
 };
 
+struct Block2D {
+  int width, height, offsetX, offsetY;
+};
+
 class RayGenerator {
 private:
   const Camera& camera;
-  Sampler2D sp2d;
+  StratifiedSampler2D sp2d;
+  Block2D curRenderBlock;
   int spp, cntx, cnty, cntspp;
-  int reX, reY;
 
 public:
   //spp must a squre number
   RayGenerator(const Camera& cam, int _spp):
-    camera(cam), sp2d(glm::sqrt(_spp)), spp(_spp), 
-    cntx(0), cnty(0), cntspp(0),
-    reX(cam.getReX()), reY(cam.getReY()){}
+    camera(cam), sp2d(glm::sqrt(_spp)), 
+    curRenderBlock({cam.getReX(), cam.getReY(), 0, 0}),
+    spp(_spp), cntx(0), cnty(0), cntspp(0){}
 
-  void clear() {
+  void reset(const Block2D renderBlock) {
+    curRenderBlock = renderBlock;
     cntx = cnty = cntspp = 0;
     sp2d.clear();
   }
 
   bool genNextRay(Ray& ray, glm::vec2& rasterPos) {
-    if(cntx>=reX || cnty>=reY) return false;
-    rasterPos = sp2d.get2()+glm::vec2(cntx, cnty);
+    if(cntx >= curRenderBlock.width || 
+       cnty >= curRenderBlock.height) 
+       return false;
+    glm::vec2 offset(
+      cntx+curRenderBlock.offsetX,
+      cnty+curRenderBlock.offsetY
+    );
+    rasterPos = sp2d.get2()+offset;
     
     // !! NOTICE: just like 300.0f + 0.99999f == 301.0f
     /*
@@ -87,9 +98,9 @@ public:
     使用std::nextafter能够得到最近的大于或小于某个数的浮点数，是最好的选择。
     这一部分非常重要，用中文写明
     */
-    if(rasterPos.x >= cntx+1) 
+    if(rasterPos.x >= offset.x+1) 
       rasterPos.x=std::nextafter(rasterPos.x, rasterPos.x-1);
-    if(rasterPos.y >= cnty+1) 
+    if(rasterPos.y >= offset.y+1) 
       rasterPos.y=std::nextafter(rasterPos.y, rasterPos.y-1);
 
     camera.generateRay(ray, rasterPos);
@@ -97,7 +108,7 @@ public:
     if(cntspp>=spp) {
       cntspp = 0;
       cntx++;
-      if(cntx>=reX) {
+      if(cntx>=curRenderBlock.width) {
         cntx = 0;
         cnty++;
       }

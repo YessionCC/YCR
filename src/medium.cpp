@@ -1,6 +1,7 @@
 
 #include "medium.hpp"
 #include "scene.hpp"
+#include "sampler.hpp"
 
 Medium::Medium(float sigmaT, glm::vec3 sigmaS, 
   Model* model, const BXDF* phaseFunc):
@@ -22,7 +23,7 @@ void Medium::addToScene(Scene& scene, bool noBXDF) {
 }
 
 glm::vec3 Medium::sampleNextItsc(const Ray& ray, Intersection& itsc) const{
-  float t = SampleShape::sampler().expSampleMedium(sigmaT);
+  float t = _ThreadSampler.expSampleMedium(sigmaT);
   if(t < itsc.t) {
     itsc.itscVtx.position = ray.pass(t);
     itsc.prim = particle;

@@ -37,7 +37,7 @@ Primitive* Triangle::copy(const Mesh* _mesh) const {
 }
 
 float Triangle::getAPointOnSurface(Intersection& itsc) const {
-  itsc.localUV = SampleShape::sampler().uniSampleTriangle();
+  itsc.localUV = _ThreadSampler.uniSampleTriangle();
   itsc.prim = this;
   handleItscResult(itsc);
   return 1.0f/getArea();
@@ -131,7 +131,7 @@ void Triangle::autoCalcParams(bool reverseNormal) {
 }
 
 void Triangle::genPrimPointCloud(PCShower& pc, glm::vec3 col) const {
-  glm::vec2 uv = SampleShape::sampler().uniSampleTriangle();
+  glm::vec2 uv = _ThreadSampler.uniSampleTriangle();
   glm::vec3 pos = uv.x*verts[0]->position+
     uv.y*verts[1]->position+(1.0f-uv.x-uv.y)*verts[2]->position;
   pc.addItem(pos, col);
@@ -166,7 +166,7 @@ Primitive* Sphere::copy(const Mesh* _mesh) const {
 }
 
 glm::vec3 Sphere::uniSampleSphereDir() const {
-  glm::vec2 uv = SampleShape::sampler().uniSampleSphere();
+  glm::vec2 uv = _ThreadSampler.uniSampleSphere();
   glm::vec3 pos;
   pos.z = uv.x;
   float sinTheta = glm::sqrt(1-glm::min(1.0f, uv.x*uv.x));

@@ -4,6 +4,7 @@
 #include "scene.hpp"
 #include "camera.hpp"
 #include "path.hpp"
+#include "parallel.hpp"
 
 #include "debug/pcshow.hpp"
 #include "debug/analyse.hpp"
@@ -85,18 +86,17 @@ int main() {
   sphere.scale(glm::vec3(1.5));
   sphere.translate(glm::vec3(-1, 14, 0));
 
-  glm::vec3 sigmaS(0.6); float sT = 0.7;
+  glm::vec3 sigmaS(0.6); float sT = 0.006;
   Medium* medium = new Medium(
-    sT, sigmaS, &nano, new HenyeyPhase(0.5, sigmaS));
+    sT, sigmaS, nullptr, new HenyeyPhase(0.5, sigmaS));
 
   PCShower pc;
   Scene scene;
   Film film(800, 800, 60);
-  Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
-  //Camera cam(film, {0, 14, 35}, {0, -0.4f, -1});
-  RayGenerator rGen(cam, 64);
+  //Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
+  Camera cam(film, {0, 14, 35}, {0, -0.4f, -1});
 
-  //scene.addGlobalMedium(medium);
+  scene.addGlobalMedium(medium);
   //scene.addModel(nano);
   scene.addLight(light);
   //scene.addLight(envLight);
@@ -105,9 +105,9 @@ int main() {
   scene.addModel(bkg2);
   //scene.addModel(sphere);
   //scene.addModel(sphere2);
-  //scene.addModel(sphere3);
+  scene.addModel(sphere);
   //scene.addModel(cube);
-  scene.addMedium(medium, false);
+  //scene.addMedium(medium, false);
   //scene.addModel(cube2);
 
   scene.init();
@@ -125,15 +125,11 @@ int main() {
 
   cam.visualizePointCloud(pc, 18, 40);
   
-  PathIntegrator integrator;
-  
-  integrator.render(rGen, scene, film);
-  film.generateImage("/home/yession/Code/Cpp/ycr/img/glass_fb4.jpg");
-  film.clear();
+  ParallelRenderer pRenderer(scene, cam, film, 4096*4, 12);
+  pRenderer.render("/home/yession/Code/Cpp/ycr/img/glass_fb4.jpg");
 
   //integrator.visualizeRender(pc, rGen, scene, film);
 
-  std::cout<<"Render Complete"<<std::endl;
   //__ShowTimeAnalyse__
   //system("shutdown -h now");
   pc.write("/home/yession/Code/Cpp/ycr/pc.ply");

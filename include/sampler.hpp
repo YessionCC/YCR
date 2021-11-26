@@ -1,12 +1,13 @@
 #pragma once
 
-
 #include <random>
 #include <glm/glm.hpp>
 
 #include "const.hpp"
 
-class Sampler2D { // Stractify Sampler
+#define _ThreadSampler GeneralSampler::getThreadSampler()
+
+class StratifiedSampler2D { // Stractify Sampler
 private:
   int stract_w;
   float inv_w;
@@ -15,7 +16,7 @@ private:
   std::uniform_real_distribution<float> urd;
   
 public:
-  Sampler2D(int w, int seed = 0): 
+  StratifiedSampler2D(int w, int seed = 0): 
     stract_w(w), inv_w(1.0f/w),
     eng(seed), urd(0.0f, 1.0f){}
 
@@ -33,29 +34,16 @@ public:
 
 };
 
-class Sampler1D {
-private:
-  std::default_random_engine eng;
-  std::uniform_real_distribution<float> urd;
-public:
-  Sampler1D(int seed = 0): eng(0), urd(0.0f, 1.0f) {}
-  float get1() {
-    return urd(eng);
-  }
-};
-
-class SampleShape {
+class GeneralSampler {
 private:
   std::default_random_engine eng;
   std::uniform_real_distribution<float> urd;
 
-  SampleShape(): eng(0), urd(0.0f, 1.0f){}
 
 public:
-  static SampleShape& sampler() {
-    static SampleShape sampler;
-    return sampler;
-  }
+  GeneralSampler(): eng(0), urd(0.0f, 1.0f){}
+
+  static GeneralSampler& getThreadSampler();
 
   inline void resetSeed(int seed) {eng.seed(seed);}
 

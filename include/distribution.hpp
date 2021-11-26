@@ -54,7 +54,7 @@ public:
       std::cout<<"sample distribution1D before initiating!"<<std::endl;
       return -1;
     }
-    float u1 = SampleShape::sampler().get1();
+    float u1 = _ThreadSampler.get1();
     unsigned int idx = std::lower_bound(cdf.begin(), cdf.end(), u1) - cdf.begin();
     if(idx >= cdf.size()) idx = cdf.size() - 1;
     if(idx == 0) pdf = cdf[0];
@@ -125,7 +125,7 @@ public:
       std::cout<<"sample distribution2D before initiating!"<<std::endl;
       return false;
     }
-    float u1 = SampleShape::sampler().get1();
+    float u1 = _ThreadSampler.get1();
     unsigned int idx = std::lower_bound(ccdf.begin(), ccdf.end(), u1) - ccdf.begin();
     if(idx >= ccdf.size()) idx = ccdf.size() - 1;
     if(idx == 0) pdf = ccdf[0];

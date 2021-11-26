@@ -1,5 +1,6 @@
 #include "light.hpp"
 #include "scene.hpp"
+#include "sampler.hpp"
 
 ShapeLight::ShapeLight(glm::vec3 le, Model& shape): le(le), model(shape) {
     model.setLightForAllMeshes(this);
@@ -84,7 +85,7 @@ float EnvironmentLight::getItscOnLight(Intersection& itsc, glm::vec3 evaP) const
   glm::vec3 dir;
   itsc.prim = nullptr; // important
   if(isSolid) {
-    glm::vec2 uv = SampleShape::sampler().uniSampleSphere();
+    glm::vec2 uv = _ThreadSampler.uniSampleSphere();
     dir.y = uv.x;
     float sinTheta = glm::sqrt(1-glm::min(1.0f, uv.x*uv.x));
     dir.x = sinTheta*glm::cos(uv.y);
@@ -96,7 +97,7 @@ float EnvironmentLight::getItscOnLight(Intersection& itsc, glm::vec3 evaP) const
     float pdf; int x, y;
     // x->width->phi, y->height->theta
     dd2d.sample(pdf, x, y);
-    glm::vec2 uv = SampleShape::sampler().get2()+glm::vec2(x, y);
+    glm::vec2 uv = _ThreadSampler.get2()+glm::vec2(x, y);
     float dux = 1.0f / dd2d.getCol()*PI2;
     float duy = 1.0f / dd2d.getRow()*PI;
     uv.x=uv.x*dux; uv.y=uv.y*duy;

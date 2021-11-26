@@ -4,6 +4,8 @@
 
 #include <iostream>
 
+#include <atomic>
+
 #include "filter.hpp"
 
 class Film {
@@ -21,17 +23,11 @@ private:
   Filter* filter;
   float fradius;
 
+  std::atomic<int>* mutexMat;
+
 public:
   //px: w, py: h
-  inline void addRadiance(glm::vec3 L, float weight, int px, int py) {
-    int pos = py*resolutionX+px;
-    if(pos>totPix) {
-      std::cout<<"Add Radiance out of range"<<std::endl;
-      return;
-    }
-    pixels[pos] += weight*L;
-    pWeights[pos] += weight;
-  }
+  void addRadiance(glm::vec3 L, float weight, int px, int py);
 
 public:
   Film() {}

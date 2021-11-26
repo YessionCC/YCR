@@ -16,6 +16,27 @@ Film::Film(int reX, int reY, float fov, Filter* filter):
   totPix = reX*reY;
   pixels = new glm::vec3[totPix];
   pWeights = new float[totPix];
+  if(fradius > 0.5f)
+    mutexMat = new std::atomic<int>[totPix];
+  else mutexMat = nullptr;
+}
+
+void Film::addRadiance(glm::vec3 L, float weight, int px, int py) {
+  int pos = py*resolutionX+px;
+  
+  if(mutexMat) {
+    int expect = 0;
+    while(!mutexMat[pos].compare_exchange_weak(expect, 1));
+  }
+  
+  if(pos>totPix) {
+    std::cout<<"Add Radiance out of range"<<std::endl;
+    return;
+  }
+  pixels[pos] += weight*L;
+  pWeights[pos] += weight;
+
+  if(mutexMat) mutexMat[pos] = 0;
 }
 
 void Film::addSplat(glm::vec3 L, glm::vec2 center) {

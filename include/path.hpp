@@ -55,10 +55,9 @@ private:
   using PathTerminateState = SubPathGenerator::TerminateState;
   const int max_bounce = 12;
 
-  SubPathGenerator subPathGenerator;
-
 public:
-  void render(RayGenerator& rayGen, const Scene& scene, Film& film);
+  void render(const Scene& scene, SubPathGenerator& subpathGen,
+    RayGenerator& rayGen, Film& film) const;
   void visualizeRender(PCShower& pc, RayGenerator& rayGen, 
     Scene& scene, Film& film);
 };

@@ -66,25 +66,26 @@ int SubPathGenerator::createSubPath(
   return max_bounce;
 }
 
-void PathIntegrator::render(RayGenerator& rayGen, const Scene& scene, Film& film) {
+void PathIntegrator::render(const Scene& scene, SubPathGenerator& subpathGen,
+  RayGenerator& rayGen, Film& film) const {
 
   Ray ray; glm::vec2 rasPos;
-  auto& pathVtxs = subPathGenerator.getPathVtxs();
+  auto& pathVtxs = subpathGen.getPathVtxs();
 
   while(rayGen.genNextRay(ray, rasPos)) {
     // if((int)rasPos.x == 344 && (int)rasPos.y == 169) {
     //   int a = 0;
     // }
 
-    subPathGenerator.clear();
+    subpathGen.clear();
 
     //__StartTimeAnalyse__("subpath")
-    int bounce = subPathGenerator.createSubPath(ray, scene, max_bounce);
+    int bounce = subpathGen.createSubPath(ray, scene, max_bounce);
     //__EndTimeAnalyse__
 
     Ray rayToLight, lastRay;
     Intersection litsc; const Light* lt; float len;
-    glm::vec3 radiance = subPathGenerator.getDiracLight(), tr = glm::vec3(1.0f);
+    glm::vec3 radiance = subpathGen.getDiracLight(), tr = glm::vec3(1.0f);
 
     //__StartTimeAnalyse__("dirlight")
     for(unsigned int i = 0; i<pathVtxs.size(); i++) {
@@ -152,53 +153,10 @@ void PathIntegrator::render(RayGenerator& rayGen, const Scene& scene, Film& film
     film.addRadiance(radiance, 1, rasPos.x, rasPos.y);
     //film.addSplat(radiance, rasPos);
   }
-  rayGen.clear();
 }
 
 // this func need to be changed after
 void PathIntegrator::visualizeRender(
   PCShower& pc, RayGenerator& rayGen, Scene& scene, Film& film) {
 
-  glm::vec3 coll(1, 0.5, 1), colr;
-  int pnum = 600; float rate = 1.4e-4;
-  Ray ray; glm::vec2 rasPos;
-  auto& pathVtxs = subPathGenerator.getPathVtxs();
-  while(rayGen.genNextRay(ray, rasPos)) {
-    if(SampleShape::sampler().get1()>rate) continue;
-    subPathGenerator.clear();
-    int bounce = subPathGenerator.createSubPath(ray, scene, max_bounce);
-    for(unsigned int i = 0; i<pathVtxs.size(); i++) {
-      if(i%3 == 0) colr = glm::vec3(1,0,0);
-      if(i%3 == 1) colr = glm::vec3(0,1,0);
-      if(i%3 == 2) colr = glm::vec3(0,0,1);
-      if(i == 0) ray.saveSegLineAsPointCloud(pc, pathVtxs[0].itsc.t, colr, pnum);
-      else {
-        Ray vsr;
-        vsr.o = pathVtxs[i-1].itsc.itscVtx.position;
-        vsr.d = -pathVtxs[i].dir_o;
-        vsr.saveSegLineAsPointCloud(pc, pathVtxs[i].itsc.t, colr, pnum);
-      }
-    }
-    if(bounce == 0 && 
-      subPathGenerator.getTerminateState() == PathTerminateState::ItscLight){
-      continue;
-    }
-
-    Intersection litsc; Ray rayToLight; const Light* lt; float len;
-    for(unsigned int i = 0; i<pathVtxs.size(); i++) {
-
-      if(_HasType(pathVtxs[i].bxdfType, DELTA)) continue;
-
-      float lpdf = scene.sampleALight(lt);
-      lpdf *= lt->getItscOnLight(litsc, pathVtxs[i].itsc.itscVtx.position);
-
-      if(scene.occlude(pathVtxs[i].itsc, litsc, rayToLight, len)) continue; 
-
-      Ray r;
-      r.o = pathVtxs[i].itsc.itscVtx.position;
-      r.d = glm::normalize(litsc.itscVtx.position - r.o);
-      r.saveSegLineAsPointCloud(pc, 20, coll, pnum);
-    }
-  }
-  rayGen.clear();
 }

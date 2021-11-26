@@ -1,4 +1,5 @@
 #include "bxdf.hpp"
+#include "sampler.hpp"
 
 glm::vec3 LambertianDiffuse::evaluate(
   const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const {
@@ -8,7 +9,7 @@ glm::vec3 LambertianDiffuse::evaluate(
 
 glm::vec3 LambertianDiffuse::sample_ev(
   const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const {
-  glm::vec2 dir_i = SampleShape::sampler().uniSampleDisk();
+  glm::vec2 dir_i = _ThreadSampler.uniSampleDisk();
   glm::vec3 tanp(
     dir_i.x*glm::cos(dir_i.y), 
     dir_i.x*glm::sin(dir_i.y),
@@ -39,7 +40,7 @@ glm::vec3 GlassSpecular::sample_ev(
   bool res = Refract(ray_o.d, normal, ei, et, ray_i.d, cosThetaT);
   if(res) return absorbR->tex2D(itsc.itscVtx.uv);
   float fr = FrDielectric(cosThetaI, cosThetaT, ei, et);
-  float u = SampleShape::sampler().get1();
+  float u = _ThreadSampler.get1();
   if(u < fr) {
     ray_i.d = Reflect(ray_o.d, normal);
     return absorbR->tex2D(itsc.itscVtx.uv); // fr*R/fr
@@ -54,7 +55,7 @@ glm::vec3 GlassSpecular::sample_ev(
 
 inline float HenyeyPhase::samplePhaseCosTheta() const { //
   float cosTheta;
-  float u = SampleShape::sampler().get1();
+  float u = _ThreadSampler.get1();
   if(glm::abs(g) < 1e-3) cosTheta = 1.f-2.f*u;
   else {
     float t = (1-g*g)/(1-g+2*g*u);
@@ -67,7 +68,7 @@ glm::vec3 HenyeyPhase::sample_ev(
   const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const {
   float cosTheta = samplePhaseCosTheta();
   float sinTheta = glm::sqrt(1.0f - glm::min(1.0f, cosTheta*cosTheta));
-  float phi = SampleShape::sampler().get1()*PI2;
+  float phi = _ThreadSampler.get1()*PI2;
   glm::vec3 rayP = {
     glm::cos(phi)*sinTheta, 
     glm::sin(phi)*sinTheta,

@@ -4,7 +4,6 @@
 
 #include "itsc.hpp"
 #include "texture.hpp"
-#include "sampler.hpp"
 #include "ray.hpp"
 #include "utility.hpp"
 
