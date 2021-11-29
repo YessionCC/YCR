@@ -52,7 +52,8 @@ public:
 
   void addSplat(glm::vec3 L, glm::vec2 center);
 
-  void generateImage(const char* filename);
+  void generateImage(const char* filename) const ;
+  void generateImage(unsigned char* imgMat) const ;
 
   inline void clear() {
     for(int i=0; i<totPix; i++) {

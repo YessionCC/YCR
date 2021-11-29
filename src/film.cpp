@@ -55,7 +55,8 @@ void Film::addSplat(glm::vec3 L, glm::vec2 center) {
   }
 }
 
-void Film::generateImage(const char* filename) {
+void Film::generateImage(const char* filename) const {
+  glm::vec3 pix;
   unsigned char* output = new unsigned char[totPix*3];
   for(int i=0; i<totPix; i++) {
     // debug error detect
@@ -64,13 +65,26 @@ void Film::generateImage(const char* filename) {
     }
     
     if(pWeights[i] > 0.0f) {
-      pixels[i] /= pWeights[i];
+      pix = pixels[i]/pWeights[i];
     }
-    pixels[i] = 255.0f*glm::clamp(pixels[i], 0.0f, 1.0f);
-    output[i*3] = (unsigned char)(pixels[i].x);
-    output[i*3+1] = (unsigned char)(pixels[i].y);
-    output[i*3+2] = (unsigned char)(pixels[i].z);
+    pix = 255.0f*glm::clamp(pix, 0.0f, 1.0f);
+    output[i*3] = (unsigned char)(pix.x);
+    output[i*3+1] = (unsigned char)(pix.y);
+    output[i*3+2] = (unsigned char)(pix.z);
   }
   stbi_write_jpg(filename, resolutionX, resolutionY, 3, output, 100);
   delete output;
+}
+
+void Film::generateImage(unsigned char* imgMat) const {
+  glm::vec3 pix;
+  for(int i=0; i<totPix; i++) {
+    if(pWeights[i] > 0.0f) {
+      pix = pixels[i]/pWeights[i];
+    }
+    pix = 255.0f*glm::clamp(pix, 0.0f, 1.0f);
+    imgMat[i*3] = (unsigned char)(pix.x);
+    imgMat[i*3+1] = (unsigned char)(pix.y);
+    imgMat[i*3+2] = (unsigned char)(pix.z);
+  }
 }

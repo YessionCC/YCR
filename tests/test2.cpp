@@ -8,10 +8,17 @@
 
 #include "debug/pcshow.hpp"
 #include "debug/analyse.hpp"
+#include "debug/renderProc.hpp"
 
 #include <iomanip>
 
-// NOTICE: glm::vec no default init value, you can not regard it as 0 !!!
+PCShower pc;
+Scene scene;
+Film film(800, 800, 60);
+//Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
+Camera cam(film, {0, 14, 35}, {0, -0.4f, -1});
+RenderProcShower rShower(film);
+ParallelRenderer pRenderer(scene, cam, film, 1024, 12);
 
 int main() {
   glm::vec3 vtxsl[3] = {{-8,6,0}, {-8,7,0}, {-8,6,1}};
@@ -90,22 +97,16 @@ int main() {
   Medium* medium = new Medium(
     sT, sigmaS, nullptr, new HenyeyPhase(0.5, sigmaS));
 
-  PCShower pc;
-  Scene scene;
-  Film film(800, 800, 60);
-  //Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
-  Camera cam(film, {0, 14, 35}, {0, -0.4f, -1});
-
-  scene.addGlobalMedium(medium);
+  //scene.addGlobalMedium(medium);
   //scene.addModel(nano);
   scene.addLight(light);
-  //scene.addLight(envLight);
+  scene.addLight(envLight);
   //scene.addLight(light2);
   //scene.addModel(bkg);
   scene.addModel(bkg2);
   //scene.addModel(sphere);
   //scene.addModel(sphere2);
-  scene.addModel(sphere);
+  //scene.addModel(sphere);
   //scene.addModel(cube);
   //scene.addMedium(medium, false);
   //scene.addModel(cube2);
@@ -124,10 +125,10 @@ int main() {
   //cube2.toPointClouds(pc, 1e4, glm::vec3(1.0f));
 
   cam.visualizePointCloud(pc, 18, 40);
-  
-  ParallelRenderer pRenderer(scene, cam, film, 4096*4, 12);
-  pRenderer.render("/home/yession/Code/Cpp/ycr/img/glass_fb4.jpg");
 
+  rShower.showProc();
+  pRenderer.render("/home/yession/Code/Cpp/ycr/img/glass_fb5.jpg");
+  rShower.terminate();
   //integrator.visualizeRender(pc, rGen, scene, film);
 
   //__ShowTimeAnalyse__
