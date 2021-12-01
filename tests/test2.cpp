@@ -18,7 +18,7 @@ Film film(800, 800, 60);
 //Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
 Camera cam(film, {0, 14, 35}, {0, -0.4f, -1});
 RenderProcShower rShower(film);
-ParallelRenderer pRenderer(scene, cam, film, 1, 1);
+ParallelRenderer pRenderer(scene, cam, film, 1024, 12);
 
 int main() {
   glm::vec3 vtxsl[3] = {{-8,6,0}, {-8,7,0}, {-8,6,1}};
@@ -62,7 +62,7 @@ int main() {
   BXDF* bxdf6 = new GGX(1.0f, 1.4f, new SolidTexture(0.6f), imgtex);
   
   bkg.setBxdfForAllMeshes(bxdf4);
-  bkg2.setBxdfForAllMeshes(bxdf6);//
+  bkg2.setBxdfForAllMeshes(bxdf2);//
   sphere.setBxdfForAllMeshes(bxdf);
   sphere3.setBxdfForAllMeshes(bxdf5);
   cube.setBxdfForAllMeshes(bxdf5);
@@ -98,16 +98,16 @@ int main() {
   Medium* medium = new Medium(
     sT, sigmaS, nullptr, new HenyeyPhase(0.5, sigmaS));
 
-  //scene.addGlobalMedium(medium);
+  scene.addGlobalMedium(medium);
   //scene.addModel(nano);
   scene.addLight(light);
-  scene.addLight(envLight);
+  //scene.addLight(envLight);
   //scene.addLight(light2);
   //scene.addModel(bkg);
   scene.addModel(bkg2);
   //scene.addModel(sphere);
   //scene.addModel(sphere2);
-  //scene.addModel(sphere);
+  scene.addModel(sphere);
   //scene.addModel(cube);
   //scene.addMedium(medium, false);
   //scene.addModel(cube2);

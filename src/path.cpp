@@ -40,20 +40,22 @@ int SubPathGenerator::createSubPath(
     
     ray.o = itsc.itscVtx.position; 
     ray.d = -ray.d;
+
     glm::vec3 val = bxdf->sample_ev(itsc, ray, sampleRay);
     if(val.x == 0.0f && val.y == 0.0f && val.z == 0.0f) {
       tstate = TerminateState::TotalBlack;
       return bounce;
     }
-    beta *= val;
-    ray = sampleRay;
 
+    pvtx.dir_o = ray.d;
+    pvtx.beta = beta;
     pvtx.bxdfType = bxdf->getType();
     pvtx.inMedium = inMedium;
-    pvtx.dir_o = -ray.d;
-    pvtx.beta = beta;
     pvtx.itsc = itsc;
     pathVertices.push_back(pvtx);
+
+    beta *= val;
+    ray = sampleRay;//
 
     // if the bxdf is medium(not has medium, like pureTrans), its not surface, so no shift
     // if the bxdf is RTBoth, then the offset is up to the direct light
