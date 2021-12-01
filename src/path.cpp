@@ -40,7 +40,12 @@ int SubPathGenerator::createSubPath(
     
     ray.o = itsc.itscVtx.position; 
     ray.d = -ray.d;
-    beta *= bxdf->sample_ev(itsc, ray, sampleRay);
+    glm::vec3 val = bxdf->sample_ev(itsc, ray, sampleRay);
+    if(val.x == 0.0f && val.y == 0.0f && val.z == 0.0f) {
+      tstate = TerminateState::TotalBlack;
+      return bounce;
+    }
+    beta *= val;
     ray = sampleRay;
 
     pvtx.bxdfType = bxdf->getType();
@@ -103,13 +108,13 @@ void PathIntegrator::render(const Scene& scene, SubPathGenerator& subpathGen,
       dirToLight /= len;
 
       // REFLECT BXDF exitant radiance always on the same side with normal
-      if(_IsType(pathVtxs[i].bxdfType, REFLECT) && 
+      if(_HasType(pathVtxs[i].bxdfType, REFLECT) && 
         pathVtxs[i].itsc.cosTheta(dirToLight) < 0) continue; 
       // TR BXDF exitant radiance always on the opposite side with normal
-      else if(_IsType(pathVtxs[i].bxdfType, TRANSMISSION) && 
+      else if(_HasType(pathVtxs[i].bxdfType, TRANSMISSION) && 
         pathVtxs[i].itsc.cosTheta(dirToLight) > 0) continue; 
       // RTBoth BXDF exitant radiance uncertain
-      else if(_IsType(pathVtxs[i].bxdfType, RTBoth)) {
+      else if(_HasType(pathVtxs[i].bxdfType, RTBoth)) {
         pathVtxs[i].itsc.maxErrorOffset(
           dirToLight, 
           pathVtxs[i].itsc.itscVtx.position);

@@ -26,6 +26,65 @@ glm::vec3 NoFrSpecular::sample_ev(
   return absorb->tex2D(itsc.itscVtx.uv);
 }
 
+float GGX::roughnessToAlpha(float roughness) const {
+  roughness = std::max(roughness, 1e-3f);
+  float x = std::log(roughness);
+  return 1.62142f + 0.819955f * x + 0.1734f * x * x + 0.0171201f * x * x * x +
+          0.000640711f * x * x * x * x;
+}
+float GGX::normalDistribution(float normalTangent2, float alpha) const {
+  float normalCos2 = 1.0f/(1.0f+normalTangent2);
+  float tmp = alpha*normalCos2*(1+normalTangent2/(alpha*alpha));
+  return 1.0f / (PI*tmp*tmp);
+}
+void GGX::sampleNormal(float alpha, float& phi, float& tan2Theta) const {
+  phi = PI2*_ThreadSampler.get1();
+  float u2 = _ThreadSampler.get1();
+  tan2Theta = u2*alpha*alpha/(1-u2);
+}
+float GGX::maskShadow(float tan2Theta, float alpha) const {
+  return 0.5f*(-1+glm::sqrt(1+(alpha*tan2Theta)*(alpha*tan2Theta)));
+}
+
+glm::vec3 GGX::evaluate(
+  const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const {
+  float alpha = roughnessToAlpha(roughness->tex2D(itsc.itscVtx.uv).x);
+  float tan2ThetaI = glm::max(0.0f, itsc.itscVtx.tan2Theta(ray_i.d));
+  float tan2ThetaO = glm::max(0.0f, itsc.itscVtx.tan2Theta(ray_o.d));
+  float G = 1.0f/(1.0f+maskShadow(tan2ThetaI, alpha)+maskShadow(tan2ThetaO, alpha));
+  glm::vec3 wh = glm::normalize(ray_i.d+itsc.itscVtx.normal);
+  float tan2ThetaWh = glm::max(0.0f, itsc.itscVtx.tan2Theta(wh));
+  float normalDistr = normalDistribution(tan2ThetaWh, alpha);
+  float fr = FrDielectricReflect(ray_o.d, wh, eataI, eataT);
+  float cosThetaO = itsc.itscVtx.cosTheta(ray_o.d);
+  return normalDistr*G*fr/(4.0f*cosThetaO)*albedo->tex2D(itsc.itscVtx.uv);
+}
+
+glm::vec3 GGX::sample_ev(
+  const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const {
+  float phi, tan2Theta;
+  float alpha = roughnessToAlpha(roughness->tex2D(itsc.itscVtx.uv).x);
+  sampleNormal(alpha, phi, tan2Theta);
+  float cos2Theta = 1.0f/(1.0f+tan2Theta);
+  float sinTheta = glm::sqrt(glm::max(0.0f, 1.0f - cos2Theta));
+  glm::vec3 tanp(
+    sinTheta*glm::cos(phi), 
+    sinTheta*glm::sin(phi),
+    glm::sqrt(cos2Theta));
+  glm::vec3 wh = itsc.toWorldSpace(tanp);
+  glm::vec3 refl = Reflect(ray_o.d, wh);
+  // do not point inside surface, compare with geoNormal
+  if(itsc.cosTheta(refl) <= 0.0f) return glm::vec3(0.0f);
+  ray_i.o = itsc.itscVtx.position;
+  ray_i.d = refl;
+  float tan2ThetaI = glm::max(0.0f, itsc.itscVtx.tan2Theta(ray_i.d));
+  float tan2ThetaO = glm::max(0.0f, itsc.itscVtx.tan2Theta(ray_o.d));
+  float G = 1.0f/(1.0f+maskShadow(tan2ThetaI, alpha)+maskShadow(tan2ThetaO, alpha));
+  float fr = FrDielectricReflect(ray_o.d, wh, eataI, eataT);
+  float cosThetaO = itsc.itscVtx.cosTheta(ray_o.d);
+  return G*fr/(4.0f*cosThetaO)*albedo->tex2D(itsc.itscVtx.uv); // D(wh) cancel out
+}
+
 glm::vec3 GlassSpecular::sample_ev(
   const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const {
   ray_i.o = itsc.itscVtx.position;

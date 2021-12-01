@@ -19,10 +19,13 @@ public:
   enum BXDFType {
     REFLECT = 0x001, // ray do not pass surafce
     TRANSMISSION = 0x002, // ray only pass surface
-    RTBoth = 0x003, // both REFLECT and TRANSMISSION
-    DELTA = 0x004, // dirac delta bxdf
-    MEDIUM = 0x008, // medium phase function
-    None = 0x000
+    RTBoth = 0x004, // both REFLECT and TRANSMISSION
+
+    DELTA = 0x010, // dirac delta bxdf
+    MEDIUM = 0x020, // medium phase function
+    BSSRDF = 0x040,
+    GLOSSY = 0x080, // used for MIS
+    NONE = 0x000
   };
 
 protected:
@@ -41,6 +44,19 @@ public:
   // this func directly calc beta(as pbrt)
   virtual glm::vec3 sample_ev(
     const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const = 0;
+};
+
+/************************BSSRDF Base******************************/
+
+class BSSRDF: public BXDF {
+
+public:
+  BSSRDF(): BXDF(BXDFType::BSSRDF) {}
+
+  glm::vec3 evaluate(
+    const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const override;
+  glm::vec3 sample_ev(
+    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const override;
 };
 
 /************************LambertianDiffuse******************************/
@@ -96,6 +112,31 @@ public:
   glm::vec3 sample_ev(
     const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const override;
 };
+
+/************************GGX******************************/
+
+class GGX: public BXDF {
+private:
+  float eataI, eataT;
+  const Texture *roughness, *albedo;
+
+  float roughnessToAlpha(float roughness) const ;
+  float normalDistribution(float normalTangent2, float alpha) const ;
+  void sampleNormal(float alpha, float& phi, float& tan2Theta) const ;
+  float maskShadow(float tan2Theta, float alpha) const ;
+
+public:
+  GGX(float eataI, float eataT, const Texture* roughness, const Texture* albedo): 
+    BXDF(BXDFType::REFLECT | BXDFType::GLOSSY), 
+    eataI(eataI), eataT(eataT), roughness(roughness), albedo(albedo) {}
+
+  inline glm::vec3 evaluate(
+    const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const override;
+
+  glm::vec3 sample_ev(
+    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const override;
+};
+
 
 /************************GlassSpecular******************************/
 

@@ -30,6 +30,10 @@ ParallelRenderer::ParallelRenderer(const Scene& scene, const Camera& cam,
 }
 
 bool ParallelRenderer::calcBlocks(int expectCalculation) {
+  if(threadNum == 1) {
+    rBlocks.push(Block2D{filmX, filmY, 0, 0});
+    return true;
+  }
   unsigned long long totCalc = 1ull * filmX * filmY * spp;
   unsigned long long expBlock = totCalc / expectCalculation;
   if(expBlock == 0) {

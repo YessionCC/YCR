@@ -24,6 +24,7 @@ public:
     ItscLight,
     NoItsc,
     RRFailed,
+    TotalBlack,
     None
   };
 

@@ -41,6 +41,13 @@ public:
     return glm::dot(w, normal);
   }
 
+  inline float tan2Theta(glm::vec3 w) const {
+    float cosT = cosTheta(w);
+    float cos2T = cosT*cosT;
+    float sin2T = 1 - cos2T;
+    return sin2T / cos2T;
+  }
+
   inline float theta(glm::vec3 w) const{
     return glm::acos(glm::dot(w, normal));
   }

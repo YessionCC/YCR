@@ -40,3 +40,12 @@ inline float FrDielectric(
     (eataI*cosThetaI + eataT*cosThetaT);
   return (r1*r1+r2*r2) / 2.0f;
 }
+
+// only take reflection into account
+inline float FrDielectricReflect(
+  glm::vec3 dir_o, glm::vec3 normal, float eataI, float eataT) {
+  glm::vec3 t1; float cosThetaT = 0.5f*PI;
+  Refract(dir_o, normal, eataI, eataT, t1, cosThetaT); // never return true
+  float cosThetaI = glm::dot(dir_o, normal);
+  return FrDielectric(cosThetaI, cosThetaT, eataI, eataT);
+}

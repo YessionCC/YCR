@@ -31,6 +31,7 @@ private:
 
 public:
   SolidTexture(glm::vec3 col): Texture(TexType::Solid), col(col) {}
+  SolidTexture(float col): Texture(TexType::Solid), col(col) {}
 
   glm::vec3 tex2D(glm::vec2 uv) const override {return col;}
 
