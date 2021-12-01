@@ -47,5 +47,17 @@ inline float FrDielectricReflect(
   glm::vec3 t1; float cosThetaT = 0.5f*PI;
   Refract(dir_o, normal, eataI, eataT, t1, cosThetaT); // never return true
   float cosThetaI = glm::dot(dir_o, normal);
-  return FrDielectric(cosThetaI, cosThetaT, eataI, eataT);
+  float t = FrDielectric(cosThetaI, cosThetaT, eataI, eataT);
+  if(t > 2.0f) {
+    int a = 1;
+  }
+  return t;
+}
+
+inline float paToPw(float pdf, float dist2, float cosTheta) {
+  return pdf*dist2/cosTheta;
+}
+
+inline float pwToPa(float pdf, float dist2, float cosTheta) {
+  return pdf*cosTheta/dist2;
 }

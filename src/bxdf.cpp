@@ -52,11 +52,12 @@ glm::vec3 GGX::evaluate(
   float tan2ThetaI = glm::max(0.0f, itsc.itscVtx.tan2Theta(ray_i.d));
   float tan2ThetaO = glm::max(0.0f, itsc.itscVtx.tan2Theta(ray_o.d));
   float G = 1.0f/(1.0f+maskShadow(tan2ThetaI, alpha)+maskShadow(tan2ThetaO, alpha));
-  glm::vec3 wh = glm::normalize(ray_i.d+itsc.itscVtx.normal);
+  glm::vec3 wh = glm::normalize(ray_i.d+ray_o.d);
   float tan2ThetaWh = glm::max(0.0f, itsc.itscVtx.tan2Theta(wh));
   float normalDistr = normalDistribution(tan2ThetaWh, alpha);
-  float fr = FrDielectricReflect(ray_o.d, wh, eataI, eataT);
+  float fr = 1.0f;//FrDielectricReflect(ray_o.d, wh, eataI, eataT);
   float cosThetaO = itsc.itscVtx.cosTheta(ray_o.d);
+  if(cosThetaO <= 0.0f) return glm::vec3(0.0f);
   return normalDistr*G*fr/(4.0f*cosThetaO)*albedo->tex2D(itsc.itscVtx.uv);
 }
 
@@ -80,8 +81,9 @@ glm::vec3 GGX::sample_ev(
   float tan2ThetaI = glm::max(0.0f, itsc.itscVtx.tan2Theta(ray_i.d));
   float tan2ThetaO = glm::max(0.0f, itsc.itscVtx.tan2Theta(ray_o.d));
   float G = 1.0f/(1.0f+maskShadow(tan2ThetaI, alpha)+maskShadow(tan2ThetaO, alpha));
-  float fr = FrDielectricReflect(ray_o.d, wh, eataI, eataT);
+  float fr = 1.0f;//FrDielectricReflect(ray_o.d, wh, eataI, eataT);
   float cosThetaO = itsc.itscVtx.cosTheta(ray_o.d);
+  if(cosThetaO <= 0.0f) return glm::vec3(0.0f);
   return G*fr/(4.0f*cosThetaO)*albedo->tex2D(itsc.itscVtx.uv); // D(wh) cancel out
 }
 

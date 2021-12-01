@@ -13,6 +13,11 @@ int SubPathGenerator::createSubPath(
   const Medium* inMedium = scene.getGlobalMedium();
   
   for(int bounce=0; bounce<max_bounce; bounce++) {
+
+    if(beta.x == 0.0f && beta.y == 0.0f && beta.z == 0.0f) {
+      tstate = TerminateState::TotalBlack;
+      return bounce;
+    }
     //itsc = scene.intersect(ray, itsc.prim);
     itsc = scene.intersect(ray, nullptr);
     if(inMedium)
@@ -41,12 +46,6 @@ int SubPathGenerator::createSubPath(
     ray.o = itsc.itscVtx.position; 
     ray.d = -ray.d;
 
-    glm::vec3 val = bxdf->sample_ev(itsc, ray, sampleRay);
-    if(val.x == 0.0f && val.y == 0.0f && val.z == 0.0f) {
-      tstate = TerminateState::TotalBlack;
-      return bounce;
-    }
-
     pvtx.dir_o = ray.d;
     pvtx.beta = beta;
     pvtx.bxdfType = bxdf->getType();
@@ -54,7 +53,7 @@ int SubPathGenerator::createSubPath(
     pvtx.itsc = itsc;
     pathVertices.push_back(pvtx);
 
-    beta *= val;
+    beta *= bxdf->sample_ev(itsc, ray, sampleRay);
     ray = sampleRay;//
 
     // if the bxdf is medium(not has medium, like pureTrans), its not surface, so no shift
@@ -71,6 +70,15 @@ int SubPathGenerator::createSubPath(
   }
   tstate = TerminateState::UpToMaxBounce;
   return max_bounce;
+}
+
+float PathIntegrator::estimateDirectLightByLi(
+  const Scene& scene, PathVertex& pvtx, glm::vec3& L) const{
+
+}
+
+float PathIntegrator::estimateDirectLightByBSDF(
+  const Scene& scene, PathVertex& pvtx, glm::vec3& L) const {
 }
 
 void PathIntegrator::render(const Scene& scene, SubPathGenerator& subpathGen,

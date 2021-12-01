@@ -56,6 +56,10 @@ private:
   using PathTerminateState = SubPathGenerator::TerminateState;
   const int max_bounce = 12;
 
+  // return pdf (respect to solid angle)
+  float estimateDirectLightByLi(const Scene& scene, PathVertex& pvtx, glm::vec3& L) const ;
+  float estimateDirectLightByBSDF(const Scene& scene, PathVertex& pvtx, glm::vec3& L) const;
+
 public:
   void render(const Scene& scene, SubPathGenerator& subpathGen,
     RayGenerator& rayGen, Film& film) const;

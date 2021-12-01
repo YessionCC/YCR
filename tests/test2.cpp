@@ -15,8 +15,9 @@
 PCShower pc;
 Scene scene;
 Film film(800, 800, 60);
-//Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
-Camera cam(film, {0, 14, 35}, {0, -0.4f, -1});
+Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
+//Camera cam(film, {0, 14, 35}, {0, -0.4f, -1});
+//Camera cam(film, {0, 14, 50}, {0, -0.4f, -1});
 RenderProcShower rShower(film);
 ParallelRenderer pRenderer(scene, cam, film, 1024, 12);
 
@@ -59,11 +60,11 @@ int main() {
   BXDF* bxdf5 = new LambertianDiffuse(imgtex2);
   BXDF* bxdf3 = new NoFrSpecular(new SolidTexture(glm::vec3(1.0f)));
   BXDF* bxdf4 = new LambertianDiffuse(new SolidTexture(glm::vec3(1.0f)));
-  BXDF* bxdf6 = new GGX(1.0f, 1.4f, new SolidTexture(0.6f), imgtex);
+  BXDF* bxdf6 = new GGX(1.0f, 1.4f, new SolidTexture(0.002f), imgtex);
   
   bkg.setBxdfForAllMeshes(bxdf4);
   bkg2.setBxdfForAllMeshes(bxdf2);//
-  sphere.setBxdfForAllMeshes(bxdf);
+  sphere.setBxdfForAllMeshes(bxdf6);
   sphere3.setBxdfForAllMeshes(bxdf5);
   cube.setBxdfForAllMeshes(bxdf5);
   nano.setBxdfForAllMeshes(bxdf);
@@ -79,10 +80,10 @@ int main() {
   lgt.translate({22,-13,2});
   lgt2.translate({8, -4, 6});
   lgt2.translate({-3, 0, -14});
-  sphere3.scale(glm::vec3(1.5));
+  //sphere3.scale(glm::vec3(0.5));
   sphere3.rotate({0, 0, 1}, 45);
   sphere3.translate({-4,0,5});
-  sphere3.translate({-2,18,-1});
+  // sphere3.translate({-2,18,-1});
 
   Model sphere2 = sphere;
   sphere2.setBxdfForAllMeshes(bxdf3);
@@ -91,26 +92,26 @@ int main() {
   cube2.setBxdfForAllMeshes(bxdf);
   cube2.scale(glm::vec3(500, 500, 500));
   cube2.translate({16,25,20});
-  sphere.scale(glm::vec3(1.5));
-  sphere.translate(glm::vec3(-1, 14, 0));
+  // sphere.scale(glm::vec3(1.5));
+  // sphere.translate(glm::vec3(-1, 14, 0));
 
   glm::vec3 sigmaS(0.6); float sT = 0.006;
   Medium* medium = new Medium(
     sT, sigmaS, nullptr, new HenyeyPhase(0.5, sigmaS));
 
-  scene.addGlobalMedium(medium);
+  //scene.addGlobalMedium(medium);
   //scene.addModel(nano);
-  scene.addLight(light);
-  //scene.addLight(envLight);
+  //scene.addLight(light);
+  scene.addLight(envLight);
   //scene.addLight(light2);
   //scene.addModel(bkg);
   scene.addModel(bkg2);
-  //scene.addModel(sphere);
-  //scene.addModel(sphere2);
   scene.addModel(sphere);
-  //scene.addModel(cube);
+  scene.addModel(sphere2);
+  scene.addModel(sphere3);
+  scene.addModel(cube);
   //scene.addMedium(medium, false);
-  //scene.addModel(cube2);
+  // scene.addModel(cube2);
 
   scene.init();
 
@@ -128,7 +129,7 @@ int main() {
   cam.visualizePointCloud(pc, 18, 40);
 
   rShower.showProc();
-  pRenderer.render("/home/yession/Code/Cpp/ycr/img/glass_fb5.jpg");
+  pRenderer.render("/home/yession/Code/Cpp/ycr/img/glass_fb6.jpg");
   rShower.terminate();
   //integrator.visualizeRender(pc, rGen, scene, film);
 
