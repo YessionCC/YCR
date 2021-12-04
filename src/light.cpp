@@ -107,13 +107,19 @@ float EnvironmentLight::getItscOnLight(Intersection& itsc, glm::vec3 evaP) const
 }
 
 float EnvironmentLight::getItscPdf(const Intersection& itsc, const Ray& rayToLight) const{
-  if(isSolid) return 1.0f/(PI*sceneDiameter*sceneDiameter);
+  if(isSolid) return 1.0f/(PI4*sceneDiameter*sceneDiameter);
   float theta = glm::acos(rayToLight.d.y); // world up
   float phi = std::atan2(rayToLight.d.z, rayToLight.d.x);
+  if(std::isnan(phi)) phi = 0.0f;
   if(phi < 0) phi += PI2;
   int x = phi*INV_PI2*dd2d.getCol();
   int y = theta*INV_PI*dd2d.getRow();
   float dux = 1.0f / dd2d.getCol()*PI2;
   float duy = 1.0f / dd2d.getRow()*PI;
   return dd2d.getPdf(x, y) / (dux*duy*sceneDiameter*sceneDiameter*glm::sin(theta));
+}
+
+void EnvironmentLight::genRayItsc(
+  Intersection& itsc, const Ray& rayToLight, glm::vec3 evaP) const {
+  itsc.itscVtx.position = evaP + rayToLight.d*sceneDiameter;
 }

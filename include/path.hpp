@@ -58,8 +58,11 @@ private:
   const int max_bounce = 12;
 
   // return pdf (respect to solid angle)
-  void estimateDirectLightByLi(const Scene& scene, PathVertex& pvtx, glm::vec3& L) const ;
-  float estimateDirectLightByBSDF(const Scene& scene, PathVertex& pvtx, glm::vec3& L) const;
+  void estimateDirectLightByLi(const Scene& scene, const DiscreteDistribution1D& ldd1d,
+    PathVertex& pvtx, glm::vec3& L, bool needMIS) const ;
+
+  void estimateDirectLightByBSDF(const Scene& scene, const DiscreteDistribution1D& ldd1d,
+    PathVertex& pvtx, glm::vec3& L, bool needMIS) const;
 
 public:
   void render(const Scene& scene, SubPathGenerator& subpathGen,

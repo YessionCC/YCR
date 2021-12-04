@@ -93,7 +93,7 @@ float Scene::dynamicSampleALight(
   return spdf;
 }
 
-void Scene::getDynamicSampleALightDD1D(
+void Scene::getPositionLightDD1D(
   glm::vec3 evap, DiscreteDistribution1D& dd1d) const{
   if(lights.size() == 1) return; // special judge lightnum=1
   Intersection litsc; glm::vec3 dir, L;

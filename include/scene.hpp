@@ -66,7 +66,7 @@ public:
   float sampleALight(const Light*& light) const;
   float dynamicSampleALight(const DiscreteDistribution1D& ldd1d, const Light*& light) const;
   float dynamicSampleALight(const Light*& light, glm::vec3 evap) const;
-  void getDynamicSampleALightDD1D(glm::vec3 evap, DiscreteDistribution1D& dd1d) const;
+  void getPositionLightDD1D(glm::vec3 evap, DiscreteDistribution1D& dd1d) const;
   float getLightPdf(const DiscreteDistribution1D& ldd1d, const Light* lt) const;
 
   // For Debug

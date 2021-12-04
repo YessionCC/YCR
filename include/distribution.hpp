@@ -68,8 +68,15 @@ public:
       std::cout << "ERROR: DD1D 0 size!"<<std::endl;
       return 0.0f;
     }
-    if(pos >= cdf.size()) pos = cdf.size() - 1;
-    if(pos == 0) return cdf[pos];
+    if(pos >= cdf.size()) {
+      std::cout << "ERROR: try to get "<<pos<<" pos in DD1D"<<std::endl;
+      pos = cdf.size() - 1;
+    }
+    if(pos < 0) {
+      std::cout << "ERROR: try to get "<<pos<<" pos in DD1D"<<std::endl;
+      pos = 0;
+    }
+    if(pos == 0) return cdf[pos]; //
     return cdf[pos]-cdf[pos-1];
   }
 };
@@ -155,7 +162,17 @@ public:
   inline int getCol() const {return col;}
 
   inline float getPdf(int posx, int posy) const {
-    if(posy >= ccdf.size()) posy = ccdf.size();
-    return ppdf[posy].getPdf(posx);
+    if(posy >= ccdf.size()) {
+      std::cout << "ERROR: try to get "<<posy<<" posy in DD2D"<<std::endl;
+      posy = ccdf.size() - 1;
+    }
+    if(posy < 0) {
+      std::cout << "ERROR: try to get "<<posy<<" posy in DD2D"<<std::endl;
+      posy = 0;
+    }
+    if(posy == 0)
+      return ppdf[posy].getPdf(posx) * ccdf[posy];
+    else 
+      return ppdf[posy].getPdf(posx) * (ccdf[posy] - ccdf[posy-1]);
   }
 };

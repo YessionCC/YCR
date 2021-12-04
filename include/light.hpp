@@ -138,4 +138,7 @@ public:
 
   float getItscPdf(const Intersection& itsc, const Ray& rayToLight) const;
 
+  // used for BXDF sample
+  void genRayItsc(Intersection& itsc, const Ray& rayToLight, glm::vec3 evaP) const;
+
 };

@@ -78,8 +78,11 @@ int SubPathGenerator::createSubPath(
   return max_bounce;
 }
 
+/**************************EstimateDirectLightByLi*****************************/
+
 void PathIntegrator::estimateDirectLightByLi(
-  const Scene& scene, PathVertex& pvtx, glm::vec3& L) const{
+  const Scene& scene,  const DiscreteDistribution1D& ldd1d,
+  PathVertex& pvtx, glm::vec3& L, bool needMIS) const{
   //float lpdf = scene.sampleALight(lt);
   // float lpdf = scene.dynamicSampleALight(
   //   lt, pathVtxs[i].itsc.itscVtx.position);
@@ -87,10 +90,9 @@ void PathIntegrator::estimateDirectLightByLi(
   Ray rayToLight, lastRay;
   Intersection litsc; const Light* lt; float len;
   glm::vec3 tr(1.0f); L = glm::vec3(0.0f);
-  DiscreteDistribution1D ldd1d;
-  scene.getDynamicSampleALightDD1D(pvtx.itsc.itscVtx.position, ldd1d);
-  float lpdf = scene.dynamicSampleALight(ldd1d, lt);
-  lpdf *= lt->getItscOnLight(litsc, pvtx.itsc.itscVtx.position);
+
+  float lpdf_A = scene.dynamicSampleALight(ldd1d, lt);
+  lpdf_A *= lt->getItscOnLight(litsc, pvtx.itsc.itscVtx.position);
   // TODO
   glm::vec3 dirToLight = litsc.itscVtx.position - 
     pvtx.itsc.itscVtx.position;
@@ -133,11 +135,20 @@ void PathIntegrator::estimateDirectLightByLi(
 
   glm::vec3 lastBeta = lastBxdf->evaluate(pvtx.itsc, lastRay, rayToLight);
   // debug error detect
-  L = tr*pvtx.beta*leCosDivR2*lastBeta / lpdf;
+  L = tr*pvtx.beta*leCosDivR2*lastBeta / lpdf_A;
+
+  if(needMIS) {
+    float lpdf_S = PaToPw(lpdf_A, len*len, lCosTheta);
+    float pdfBxdf = lastBxdf->sample_pdf(pvtx.itsc, rayToLight, lastRay);
+    L *= PowerHeuristicWeight(lpdf_S, pdfBxdf);
+  }
 }
 
-float PathIntegrator::estimateDirectLightByBSDF(
-  const Scene& scene, PathVertex& pvtx, glm::vec3& L) const {
+/**************************EstimateDirectLightByBSDF*****************************/
+
+void PathIntegrator::estimateDirectLightByBSDF(
+  const Scene& scene, const DiscreteDistribution1D& ldd1d,
+  PathVertex& pvtx, glm::vec3& L, bool needMIS) const {
 
   Ray rayToLight, lastRay; 
   glm::vec3 tr(1.0f); L = glm::vec3(0.0f);
@@ -148,33 +159,50 @@ float PathIntegrator::estimateDirectLightByBSDF(
   lastRay.d = pvtx.dir_o;
   
   glm::vec3 beta = bxdf->sample_ev(pvtx.itsc, lastRay, rayToLight);
-  float bxdfPdf = bxdf->sample_pdf(pvtx.itsc, lastRay, rayToLight);
-  if(IsBlack(beta)) return bxdfPdf;
+  if(IsBlack(beta)) return;
 
   Intersection itsc = scene.intersectDirectly(rayToLight, pvtx.inMedium, tr);
+
+  const Light* lt = nullptr; float cosTheta = 1.0f;
   if(itsc.prim) {
-    const Light* lt = itsc.prim->getMesh()->light;
+    lt = itsc.prim->getMesh()->light;
     if(lt) {
-      float cosTheta = itsc.itscVtx.cosTheta(-rayToLight.d);
-      if(cosTheta <= 0.0f) return bxdfPdf;
+      cosTheta = itsc.itscVtx.cosTheta(-rayToLight.d);
+      if(cosTheta <= 0.0f) return;
       L = tr*pvtx.beta*beta*lt->evaluate(itsc, -rayToLight.d);
     }
+    else return;
   }
   else {
-    if(scene.envLight) // TODO: currently we only need to take envLight into account
+    if(scene.envLight) {// TODO: currently we only need to take envLight into account
+      lt = scene.envLight;
+      scene.envLight->genRayItsc(itsc, rayToLight, pvtx.itsc.itscVtx.position);
       L = tr*pvtx.beta*beta*scene.envLight->evaluate(itsc, -rayToLight.d);
+    }
+    else return;
   }
-  return bxdfPdf;
+
+  if(needMIS) {
+    float bxdfPdf = bxdf->sample_pdf(pvtx.itsc, rayToLight, lastRay);
+    float lpdf_A = scene.getLightPdf(ldd1d, lt)*lt->getItscPdf(itsc, rayToLight);
+    glm::vec3 dir = itsc.itscVtx.position - pvtx.itsc.itscVtx.position;
+    float dist2 = dir.x*dir.x+dir.y*dir.y+dir.z*dir.z;
+    float lpdf_S = PaToPw(lpdf_A, dist2, cosTheta); // from area to solid angle;
+    L *= PowerHeuristicWeight(bxdfPdf, lpdf_S);
+  }
 }
+
+/**************************Main Render Loop*****************************/
 
 void PathIntegrator::render(const Scene& scene, SubPathGenerator& subpathGen,
   RayGenerator& rayGen, Film& film) const {
 
   Ray ray; glm::vec2 rasPos;
+  DiscreteDistribution1D ldd1d; // light power distr for every shading point
   auto& pathVtxs = subpathGen.getPathVtxs();
 
   while(rayGen.genNextRay(ray, rasPos)) {
-    // if((int)rasPos.x == 267 && (int)rasPos.y == 210) {
+    // if((int)rasPos.x == 178 && (int)rasPos.y == 239) {
     //   int a = 0;
     // }
 
@@ -189,15 +217,25 @@ void PathIntegrator::render(const Scene& scene, SubPathGenerator& subpathGen,
     //__StartTimeAnalyse__("dirlight")
     for(unsigned int i = 0; i<pathVtxs.size(); i++) {
       
-      if(_HasType(pathVtxs[i].bxdfType, DELTA)) continue;
+      PathVertex& pvtx = pathVtxs[i];
+      if(_HasType(pvtx.bxdfType, DELTA)) continue;
 
-      estimateDirectLightByLi(scene, pathVtxs[i], L1);
+      scene.getPositionLightDD1D(pvtx.itsc.itscVtx.position, ldd1d);
+
+      bool needMis = false;
+      const BXDF* bxdf = pvtx.itsc.prim->getMesh()->bxdf;
+      //if(bxdf) needMis = bxdf->needMIS(pvtx.itsc);
+
+      // Default sample by Li
+      estimateDirectLightByLi(scene, ldd1d, pvtx, L1, needMis);
       CheckRadiance(L1, rasPos);
+      radiance += L1;
 
-      //estimateDirectLightByBSDF(scene, pathVtxs[i], L2);
-      //CheckRadiance(L2, rasPos);
-
-      radiance += L1;//(L1+L2)*0.5f;
+      if(needMis) {
+        estimateDirectLightByBSDF(scene, ldd1d, pvtx, L2, needMis);
+        CheckRadiance(L2, rasPos);
+        radiance += L2;
+      }
     }
     //__EndTimeAnalyse__
 

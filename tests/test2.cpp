@@ -15,9 +15,9 @@
 PCShower pc;
 Scene scene;
 Film film(800, 800, 60);
-Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
+//Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
 //Camera cam(film, {0, 14, 35}, {0, -0.4f, -1});
-//Camera cam(film, {0, 14, 50}, {0, -0.4f, -1});
+Camera cam(film, {0, 14, 50}, {0, -0.4f, -1});
 RenderProcShower rShower(film);
 ParallelRenderer pRenderer(scene, cam, film, 1024, 12);
 
@@ -107,12 +107,12 @@ int main() {
   Medium* medium = new Medium(
     sT, sigmaS, nullptr, new HenyeyPhase(0.5, sigmaS));
 
-  //scene.addGlobalMedium(medium);
+  scene.addGlobalMedium(medium);
   //scene.addModel(nano);
-  //scene.addLight(light);
+  scene.addLight(light);
   //scene.addLight(light3);
   //scene.addLight(light4);
-  scene.addLight(envLight);
+  //scene.addLight(envLight);
   //scene.addLight(light2);
   //scene.addModel(bkg);
   scene.addModel(bkg2);
