@@ -19,6 +19,11 @@ glm::vec3 LambertianDiffuse::sample_ev(
   return texture->tex2D(itsc.itscVtx.uv);
 }
 
+float LambertianDiffuse::sample_pdf(
+  const Intersection& itsc, const Ray& ray_i, const Ray& ray_o) const {
+  return INV_PI*glm::max(0.0f, itsc.itscVtx.cosTheta(ray_i.d));
+}
+
 glm::vec3 NoFrSpecular::sample_ev(
   const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const {
   ray_i.o = itsc.itscVtx.position;
@@ -43,7 +48,7 @@ void GGX::sampleNormal(float alpha, float& phi, float& tan2Theta) const {
   tan2Theta = u2*alpha*alpha/(1-u2);
 }
 float GGX::maskShadow(float tan2Theta, float alpha) const {
-  return 0.5f*(-1+glm::sqrt(1+(alpha*tan2Theta)*(alpha*tan2Theta)));
+  return 0.5f*(-1+glm::sqrt(1+alpha*alpha*tan2Theta));
 }
 
 glm::vec3 GGX::evaluate(
@@ -61,6 +66,11 @@ glm::vec3 GGX::evaluate(
   return normalDistr*G*fr/(4.0f*cosThetaO)*albedo->tex2D(itsc.itscVtx.uv);
 }
 
+// !!we sample D(wh), and must transform it to wi(pdf from half angle to solid angle)
+// pdf(wh) = D(wh)*cos(wh)
+// pdf(wo) = pdf(wh) / (4cos(wh, wi))
+// brdf*cos(wi)/pdf = D(wh)*G*Fr/(4cos(i,n)*cos(o,n)) * cos(i,n) /(D(wh)cos(wh,n)/4cos(wh, wi))
+// == G*Fr*cos(wh,i)/(cos(wh,n)*cos(o,n))
 glm::vec3 GGX::sample_ev(
   const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const {
   float phi, tan2Theta;
@@ -83,8 +93,23 @@ glm::vec3 GGX::sample_ev(
   float G = 1.0f/(1.0f+maskShadow(tan2ThetaI, alpha)+maskShadow(tan2ThetaO, alpha));
   float fr = 1.0f;//FrDielectricReflect(ray_o.d, wh, eataI, eataT);
   float cosThetaO = itsc.itscVtx.cosTheta(ray_o.d);
+  float cosWh = itsc.itscVtx.cosTheta(wh);
+  float cosWhI = glm::max(0.0f, glm::dot(ray_i.d, wh));
   if(cosThetaO <= 0.0f) return glm::vec3(0.0f);
-  return G*fr/(4.0f*cosThetaO)*albedo->tex2D(itsc.itscVtx.uv); // D(wh) cancel out
+  return G*fr*cosWhI/(cosThetaO*cosWh)*albedo->tex2D(itsc.itscVtx.uv); 
+}
+
+// pdf(wh) = D(wh)*cos(wh)
+// pdf(wo) = pdf(wh) / (4cos(wh, wi))
+float GGX::sample_pdf(
+  const Intersection& itsc, const Ray& ray_i, const Ray& ray_o) const {
+  float alpha = roughnessToAlpha(roughness->tex2D(itsc.itscVtx.uv).x);
+  glm::vec3 wh = glm::normalize(ray_i.d+ray_o.d);
+  float tan2ThetaWh = glm::max(0.0f, itsc.itscVtx.tan2Theta(wh));
+  float normalDistr = normalDistribution(tan2ThetaWh, alpha);
+  float cosWh = itsc.itscVtx.cosTheta(wh);
+  float cosWhI = glm::max(0.0f, glm::dot(ray_i.d, wh));
+  return normalDistr*cosWh/(4.0f*cosWhI);
 }
 
 glm::vec3 GlassSpecular::sample_ev(
@@ -140,4 +165,9 @@ glm::vec3 HenyeyPhase::sample_ev(
   ray_i.o = ray_o.o;
   ray_i.d = rayP.x*x+rayP.y*y+rayP.z*ray_o.d;
   return sigmaS;
+}
+
+float HenyeyPhase::sample_pdf(
+  const Intersection& itsc, const Ray& ray_i, const Ray& ray_o) const {
+  return evaluate(itsc, ray_i, ray_o).x;
 }

@@ -6,12 +6,11 @@
 #include "stb/stb_image_resize.h"
 
 #include "texture.hpp"
-#include "utility.hpp"
 
 
 ImageTexture::ImageTexture(const char* imgname, 
-  InterpolateMode mode):
-  Texture(TexType::Image), mode(mode), scale(1.0f), offset(0.0f) {
+  float pixelScale, InterpolateMode mode):
+  Texture(TexType::Image), mode(mode), scale(1.0f), offset(0.0f), pixelScale(pixelScale) {
   img = nullptr;
   img = stbi_load(imgname, &width, &height, &channel, 0);
   if(img) {
@@ -39,7 +38,7 @@ glm::vec3 ImageTexture::tex2D(glm::vec2 uv) const{
   uv.x = uv.x - (int)uv.x;
   uv.y = uv.y - (int)uv.y;
   uv.x*=width; uv.y*=height;
-
+  glm::vec3 col(0.0f);
   if(mode == InterpolateMode::BILINEAR) {
     int xl = (int)(std::floor(uv.x - 0.5f));
     int yl = (int)(std::floor(uv.y - 0.5f));
@@ -49,11 +48,13 @@ glm::vec3 ImageTexture::tex2D(glm::vec2 uv) const{
     int yr = glm::min(yl+1, height - 1); yl = glm::max(yl, 0);
     glm::vec3 colx = (1.0f-dx)*getPixel(xl, yl)+dx*getPixel(xr, yl);
     glm::vec3 coly = (1.0f-dx)*getPixel(xl, yr)+dx*getPixel(xr, yr);
-    return (1.0f-dy)*colx+dy*coly;
+    col = (1.0f-dy)*colx+dy*coly;
   }
   else if (mode == InterpolateMode::NEAR) {
-    return getPixel((int)uv.x, (int)uv.y);
+    col = getPixel((int)uv.x, (int)uv.y);
   }
+
+  return pixelScale*col;
 }
 
 float ImageTexture::generateDistribution2D(DiscreteDistribution2D& dd2d) const {
@@ -70,8 +71,8 @@ float ImageTexture::generateDistribution2D(DiscreteDistribution2D& dd2d) const {
     for(int j = 0; j<dd2dSize; j++) {
       int pos = (i*dd2dSize+j)*channel;
       glm::vec3 col;
-      if(channel == 1) col = glm::vec3(odata[pos]);
-      else col = glm::vec3(odata[pos], odata[pos+1], odata[pos+2]);
+      if(channel == 1) col = pixelScale * glm::vec3(odata[pos]);
+      else col = pixelScale * glm::vec3(odata[pos], odata[pos+1], odata[pos+2]);
       float lumi = Luminance(col);
       tot_lumi += lumi;
       dd2d.addPdf(lumi, i);
@@ -79,4 +80,21 @@ float ImageTexture::generateDistribution2D(DiscreteDistribution2D& dd2d) const {
   }
   dd2d.calcCdf();
   return tot_lumi / (dd2dSize*dd2dSize);
+}
+
+float ImageTexture::getAverageLuminance() const {
+  static float avgLumi = -1.0f;
+  if(avgLumi >= 0.0f) return avgLumi;
+  float tot_lumi = 0.0f;
+  for(int i = 0; i<height; i++) {
+    for(int j = 0; j<width; j++) {
+      int pos = (i*width+j)*channel;
+      glm::vec3 col;
+      if(channel == 1) col = pixelScale * glm::vec3(img[pos]);
+      else col = pixelScale * glm::vec3(img[pos], img[pos+1], img[pos+2]);
+      tot_lumi += Luminance(col);
+    }  
+  }
+  avgLumi = tot_lumi / (height*width);
+  return avgLumi;
 }

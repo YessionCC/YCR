@@ -20,6 +20,7 @@ void Scene::addModel(Model& model) {
 
 void Scene::addLight(Light* light) {
   light->addToScene(*this);
+  ltIdx[light] = lights.size();
   lights.push_back(light);
 }
 
@@ -62,8 +63,6 @@ float Scene::sampleALight(const Light*& light) const{
   return pdf;
 }
 
-// estimate light distribution dynamically, using le*cosTheta/r2/pdf
-// when there are a lot of light, not recommend
 float Scene::dynamicSampleALight(const Light*& light, glm::vec3 evap) const{
   if(lights.size() == 1) {light = lights[0]; return 1.0f;}
   Intersection litsc; glm::vec3 dir, L;
@@ -82,18 +81,80 @@ float Scene::dynamicSampleALight(const Light*& light, glm::vec3 evap) const{
   return spdf;
 }
 
+// estimate light distribution dynamically, using le*cosTheta/r2/pdf
+// when there are a lot of light, not recommend
+float Scene::dynamicSampleALight(
+  const DiscreteDistribution1D& ldd1d, const Light*& light) const{
+
+  if(lights.size() == 1) {light = lights[0]; return 1.0f;}
+  float spdf = 1.0f;
+  int idx = ldd1d.sample(spdf);
+  light = lights[idx];
+  return spdf;
+}
+
+void Scene::getDynamicSampleALightDD1D(
+  glm::vec3 evap, DiscreteDistribution1D& dd1d) const{
+  if(lights.size() == 1) return; // special judge lightnum=1
+  Intersection litsc; glm::vec3 dir, L;
+  dd1d = DiscreteDistribution1D(lights.size());
+  for(unsigned int i = 0; i<lights.size(); i++) {
+    float pdf = lights[i]->getItscOnLight(litsc, evap);
+    dir = evap - litsc.itscVtx.position;
+    float dis2 = dir.x*dir.x+dir.y*dir.y+dir.z*dir.z;
+    L = lights[i]->evaluate(litsc, dir/glm::sqrt(dis2));
+    dd1d.addPdf(Luminance(L)/(dis2*pdf), i);
+  }
+  dd1d.calcCdf();
+}
+
+float Scene::getLightPdf(const DiscreteDistribution1D& ldd1d, const Light* lt) const{
+  if(lights.size() == 1) return 1.0f;
+  auto res = ltIdx.find(lt);
+  return ldd1d.getPdf(res->second);
+}
+
 BB3 Scene::getWholeBound() const{
   return bvh.getWholeBound();
 }
 
-Intersection Scene::intersect(const Ray& ray, const Primitive* prim) const {
+Intersection Scene::intersect(
+  const Ray& ray, const Primitive* prim, float t_limit) const {
   //__StartTimeAnalyse__("itsc_sub")
   Intersection itsc;
+  itsc.t = t_limit;
   bvh.intersect(ray, itsc, 0, prim);
   if(itsc.prim != nullptr) {
     itsc.prim->handleItscResult(itsc);
   }
   //__EndTimeAnalyse__
+  return itsc;
+}
+
+// For volume BXDF direct light test, ignore medium bounds
+Intersection Scene::intersectDirectly(
+  const Ray& ray, const Medium* medium, glm::vec3& tr) const {
+
+  tr = glm::vec3(1.0f);
+  Intersection itsc;
+  Ray testRay = ray;
+  for(int bounce = 0; bounce < 24; bounce++) { 
+    itsc = intersect(testRay, nullptr);
+    if(medium) tr*=medium->tr(itsc.t);
+
+    if(!itsc.prim) return itsc;
+    const Mesh* mesh = itsc.prim->getMesh();
+
+    if(_HasType(mesh->getType(), MEDIUM)) {
+      testRay.o = itsc.itscVtx.position;
+      itsc.maxErrorOffset(testRay.d, testRay.o);
+      if(itsc.cosTheta(testRay.d) < 0) medium = mesh->mediumInside;
+      else medium = mesh->mediumOutside;
+    }
+    else return itsc;
+  }
+  std::cout<<"Scene::intersectDirectly: Lots of test, "
+    "may caused bu complex model or numerical error"<<std::endl;
   return itsc;
 }
 
@@ -118,8 +179,7 @@ bool Scene::occlude(const Ray& ray, float t_limit, glm::vec3& tr,
   Intersection itsc;
   Ray testRay = ray;
   for(int bounce = 0; bounce < 24; bounce++) { // limit test times
-    itsc.t = t_limit;
-    itsc = intersect(testRay, nullptr);
+    itsc = intersect(testRay, nullptr, t_limit);
     if(medium) tr*=medium->tr(itsc.t);
     // if no itsc, it can only be caused by numerical error
     // when this case, the light have itsc in fact

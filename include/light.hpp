@@ -13,30 +13,43 @@ class Model;
 class Light {
 public:
   virtual ~Light() {}
+  // TO BE Improved
   virtual float selectProbality(const Scene& scene) = 0;
   // return pdf
   virtual float getItscOnLight(Intersection& itsc, glm::vec3 evaP) const = 0;
+  // if the itsc on the light, return the pdf sampling this itsc
+  virtual float getItscPdf(const Intersection& itsc, const Ray& rayToLight) const = 0;
+  // return le
   virtual glm::vec3 evaluate(const Intersection& itsc, glm::vec3 dir) const = 0;
+
   virtual void addToScene(Scene& scene) = 0;
 };
 
 class ShapeLight: public Light { 
 private:  
-  glm::vec3 le;
-  float selectP;
+  const Texture* lightMap; // do not important sample it
   Model& model;
+  float selectP, totArea;
   DiscreteDistribution1D dist;
   std::vector<const Primitive*> vp;
 
 public:
-  ShapeLight(glm::vec3 le, Model& shape);
+  ShapeLight(const Texture* ltMp, Model& shape);
 
   void addToScene(Scene& scene);
 
-  float selectProbality(const Scene& scene);
+  inline float selectProbality(const Scene& scene) {
+    return selectP;
+  }
 
-  // calc Le*cosTheta, dir in world space, dir point to outside surface
-  glm::vec3 evaluate(const Intersection& itsc, glm::vec3 dir) const;
+  // return le, dir in world space, dir point to outside surface
+  inline glm::vec3 evaluate(const Intersection& itsc, glm::vec3 dir) const{
+    return lightMap->tex2D(itsc.itscVtx.uv);
+  }
+
+  inline float getItscPdf(const Intersection& itsc, const Ray& rayToLight) const{
+    return 1.0f/totArea;
+  }
 
   float getItscOnLight(Intersection& itsc, glm::vec3 evaP) const;
 
@@ -53,14 +66,18 @@ public:
 
   void addToScene(Scene& scene) {}
 
-  float selectProbality(const Scene& scene) {return Luminance(le);}
+  inline float selectProbality(const Scene& scene) {return Luminance(le);}
 
-  // calc Le*cosTheta, dir in world space, dir point to outside surface
-  glm::vec3 evaluate(const Intersection& itsc, glm::vec3 dir) const {return le;}
+  inline glm::vec3 evaluate(const Intersection& itsc, glm::vec3 dir) const {return le;}
 
-  float getItscOnLight(Intersection& itsc, glm::vec3 evaP) const {
+  inline float getItscOnLight(Intersection& itsc, glm::vec3 evaP) const {
     itsc.itscVtx.position = position;
+    itsc.itscVtx.normal = glm::normalize(evaP - position);
     itsc.prim = nullptr; // important
+    return 1.0f;
+  }
+
+  inline float getItscPdf(const Intersection& itsc, const Ray& rayToLight) const{
     return 1.0f;
   }
 
@@ -82,15 +99,19 @@ public:
 
   float selectProbality(const Scene& scene);
 
-  // calc Le*cosTheta, dir in world space, dir point to outside surface
-  glm::vec3 evaluate(const Intersection& itsc, glm::vec3 dir) const {
-    return sceneDiameter*sceneDiameter*le;
+  inline glm::vec3 evaluate(const Intersection& itsc, glm::vec3 dir) const {
+    return le;
   }
 
-  float getItscOnLight(Intersection& itsc, glm::vec3 evaP) const {
+  inline float getItscOnLight(Intersection& itsc, glm::vec3 evaP) const {
     itsc.itscVtx.position = evaP - sceneDiameter*direction;
+    itsc.itscVtx.normal = direction;
     itsc.prim = nullptr; // important
-    return 1.0f;
+    return 0.25f*PI*sceneDiameter*sceneDiameter;
+  }
+
+  inline float getItscPdf(const Intersection& itsc, const Ray& rayToLight) const{
+    return 0.25f*PI*sceneDiameter*sceneDiameter;
   }
 
 };
@@ -100,21 +121,21 @@ private:
   const Texture* environment;
   float sceneDiameter;
   float avgLuminance;
-  float lumiScale;
   bool isSolid = false;
   DiscreteDistribution2D dd2d;
 
 public:
   // le falloff by default square relationship
-  EnvironmentLight(const Texture* tex, float scale = 1.0f);
+  EnvironmentLight(const Texture* tex);
 
   void addToScene(Scene& scene);
 
   float selectProbality(const Scene& scene);
 
-  // calc Le*cosTheta, dir in world space, dir point to outside surface
   glm::vec3 evaluate(const Intersection& itsc, glm::vec3 dir) const;
 
   float getItscOnLight(Intersection& itsc, glm::vec3 evaP) const;
+
+  float getItscPdf(const Intersection& itsc, const Ray& rayToLight) const;
 
 };

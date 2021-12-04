@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <map>
 
 #include "primitive.hpp"
 #include "medium.hpp"
@@ -18,6 +19,7 @@ public:
 private:
   std::vector<const Primitive*> primitives;
   std::vector<Light*> lights;
+  std::map<const Light*, int> ltIdx;
   DiscreteDistribution1D ldistribution; // light distribution
   
   const Medium* globalMedium = nullptr;
@@ -42,7 +44,11 @@ public:
   void init();
 
   // prim used to avoid intersect self when the scene do not have curve surface
-  Intersection intersect(const Ray& ray, const Primitive* prim = nullptr) const;
+  Intersection intersect(const Ray& ray,
+    const Primitive* prim = nullptr, float t_limit = FLOAT_MAX) const;
+  Intersection intersectDirectly(
+    const Ray& ray, const Medium* medium, glm::vec3& tr) const ;
+
   bool intersectTest(const Ray& ray, const Primitive* prim = nullptr) const;
 
   bool occlude(const Ray& ray, float t_limit, glm::vec3& tr,
@@ -58,7 +64,10 @@ public:
 
   // return pdf
   float sampleALight(const Light*& light) const;
+  float dynamicSampleALight(const DiscreteDistribution1D& ldd1d, const Light*& light) const;
   float dynamicSampleALight(const Light*& light, glm::vec3 evap) const;
+  void getDynamicSampleALightDD1D(glm::vec3 evap, DiscreteDistribution1D& dd1d) const;
+  float getLightPdf(const DiscreteDistribution1D& ldd1d, const Light* lt) const;
 
   // For Debug
   void saveBVHHierachyAsPointCloud(PCShower& pc);

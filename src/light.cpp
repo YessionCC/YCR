@@ -2,28 +2,21 @@
 #include "scene.hpp"
 #include "sampler.hpp"
 
-ShapeLight::ShapeLight(glm::vec3 le, Model& shape): le(le), model(shape) {
+ShapeLight::ShapeLight(const Texture* ltMp, Model& shape): lightMap(ltMp), model(shape) {
     model.setLightForAllMeshes(this);
-  }
+}
 
 void ShapeLight::addToScene(Scene& scene) {
   model.toPrimitives(vp);
-  float totArea = 0;
+  totArea = 0;
   for(const Primitive* p: vp) {
     float area = p->getArea();
     dist.addPdf(area);
     totArea += area;
   }
-  selectP = totArea*Luminance(le);
+  selectP = totArea*lightMap->getAverageLuminance();
   scene.addPrimitives(vp);
   dist.calcCdf();
-}
-
-float ShapeLight::selectProbality(const Scene& scene) {return selectP;}
-
-// calc Le*cosTheta, dir in world space, dir point to outside surface
-glm::vec3 ShapeLight::evaluate(const Intersection& itsc, glm::vec3 dir) const {
-  return le*glm::max(0.0f, itsc.itscVtx.cosTheta(dir));
 }
 
 float ShapeLight::getItscOnLight(Intersection& itsc, glm::vec3 evaP) const {
@@ -42,8 +35,7 @@ float DirectionalLight::selectProbality(const Scene& scene) {
   return Luminance(le);
 }
 
-EnvironmentLight::EnvironmentLight(const Texture* tex, float scale): 
-  environment(tex), lumiScale(scale) {
+EnvironmentLight::EnvironmentLight(const Texture* tex): environment(tex) {
   if(tex->getType() == Texture::TexType::Image) {
     isSolid = false;
     const ImageTexture* imt = dynamic_cast<const ImageTexture*>(environment);
@@ -67,7 +59,7 @@ float EnvironmentLight::selectProbality(const Scene& scene) {
   // maybe improve in the later
   BB3 totBB3 = scene.getWholeBound();
   sceneDiameter = totBB3.getDiagonalLength();
-  return PI4*avgLuminance*lumiScale;
+  return PI4*avgLuminance;
 }
 
 glm::vec3 EnvironmentLight::evaluate(
@@ -78,7 +70,7 @@ glm::vec3 EnvironmentLight::evaluate(
   float theta = glm::acos(dir.y); // world up
   float phi = std::atan2(dir.z, dir.x);
   if(phi < 0) phi += PI2;
-  return lumiScale * environment->tex2D({phi*INV_PI2, theta*INV_PI});
+  return environment->tex2D({phi*INV_PI2, theta*INV_PI});
 }
 
 float EnvironmentLight::getItscOnLight(Intersection& itsc, glm::vec3 evaP) const {
@@ -90,8 +82,10 @@ float EnvironmentLight::getItscOnLight(Intersection& itsc, glm::vec3 evaP) const
     float sinTheta = glm::sqrt(1-glm::min(1.0f, uv.x*uv.x));
     dir.x = sinTheta*glm::cos(uv.y);
     dir.z = sinTheta*glm::sin(uv.y);
+    // sceneDiameter is light radius
     itsc.itscVtx.position = evaP + dir*sceneDiameter;
-    return 1.0f/(PI*sceneDiameter*sceneDiameter);
+    itsc.itscVtx.normal = -dir;
+    return 1.0f/(PI4*sceneDiameter*sceneDiameter);
   }
   else {
     float pdf; int x, y;
@@ -106,6 +100,20 @@ float EnvironmentLight::getItscOnLight(Intersection& itsc, glm::vec3 evaP) const
     dir.x = sinTheta*glm::cos(uv.x);
     dir.z = sinTheta*glm::sin(uv.x);
     itsc.itscVtx.position = evaP + dir*sceneDiameter;
-    return pdf / (dux*duy*sceneDiameter*sceneDiameter);
+    itsc.itscVtx.normal = -dir;
+    
+    return pdf / (dux*duy*sceneDiameter*sceneDiameter*sinTheta);
   }
+}
+
+float EnvironmentLight::getItscPdf(const Intersection& itsc, const Ray& rayToLight) const{
+  if(isSolid) return 1.0f/(PI*sceneDiameter*sceneDiameter);
+  float theta = glm::acos(rayToLight.d.y); // world up
+  float phi = std::atan2(rayToLight.d.z, rayToLight.d.x);
+  if(phi < 0) phi += PI2;
+  int x = phi*INV_PI2*dd2d.getCol();
+  int y = theta*INV_PI*dd2d.getRow();
+  float dux = 1.0f / dd2d.getCol()*PI2;
+  float duy = 1.0f / dd2d.getRow()*PI;
+  return dd2d.getPdf(x, y) / (dux*duy*sceneDiameter*sceneDiameter*glm::sin(theta));
 }

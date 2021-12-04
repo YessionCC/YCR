@@ -44,8 +44,11 @@ int main() {
   EnvironmentLight* envLight = 
     new EnvironmentLight(
       new ImageTexture("/home/yession/Code/Cpp/ycr/models/Cube/polar.jpg"));
-  Light* light = new ShapeLight(glm::vec3(800.0f), lgt);
-  Light* light2 = new ShapeLight(glm::vec3(150.0f), lgt2);
+  EnvironmentLight* envLight2 = 
+    new EnvironmentLight(
+      new SolidTexture(1.0f));
+  Light* light = new ShapeLight(new SolidTexture(800.0f), lgt);
+  Light* light2 = new ShapeLight(new SolidTexture(150.0f), lgt2);
   Light* pLight = new PointLight(glm::vec3(1000), glm::vec3(6,6,6));
   Light* dLight = new DirectionalLight(glm::vec3(3), glm::vec3(0,-1,0));
 
@@ -60,10 +63,11 @@ int main() {
   BXDF* bxdf5 = new LambertianDiffuse(imgtex2);
   BXDF* bxdf3 = new NoFrSpecular(new SolidTexture(glm::vec3(1.0f)));
   BXDF* bxdf4 = new LambertianDiffuse(new SolidTexture(glm::vec3(1.0f)));
-  BXDF* bxdf6 = new GGX(1.0f, 1.4f, new SolidTexture(0.002f), imgtex);
+  BXDF* bxdf6 = new GGX(1.0f, 1.4f, new SolidTexture(0.002f), new SolidTexture(1.0f));
+  BXDF* bxdf7 = new GGX(1.0f, 1.4f, new SolidTexture(0.002f), imgtex);
   
   bkg.setBxdfForAllMeshes(bxdf4);
-  bkg2.setBxdfForAllMeshes(bxdf2);//
+  bkg2.setBxdfForAllMeshes(bxdf7);//
   sphere.setBxdfForAllMeshes(bxdf6);
   sphere3.setBxdfForAllMeshes(bxdf5);
   cube.setBxdfForAllMeshes(bxdf5);
@@ -95,6 +99,10 @@ int main() {
   // sphere.scale(glm::vec3(1.5));
   // sphere.translate(glm::vec3(-1, 14, 0));
 
+
+  //Light* light3 = new ShapeLight(new SolidTexture({0.2, 0.2, 0.8}), sphere3);
+  //Light* light4 = new ShapeLight(new SolidTexture({0.8, 0.2, 0.2}), sphere2);
+
   glm::vec3 sigmaS(0.6); float sT = 0.006;
   Medium* medium = new Medium(
     sT, sigmaS, nullptr, new HenyeyPhase(0.5, sigmaS));
@@ -102,6 +110,8 @@ int main() {
   //scene.addGlobalMedium(medium);
   //scene.addModel(nano);
   //scene.addLight(light);
+  //scene.addLight(light3);
+  //scene.addLight(light4);
   scene.addLight(envLight);
   //scene.addLight(light2);
   //scene.addModel(bkg);

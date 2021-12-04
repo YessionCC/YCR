@@ -37,13 +37,20 @@ public:
 
   inline int getType() const {return type;}
 
-  // return brdf*|cos|
+  // return brdf*|cos|, always not return black
   virtual glm::vec3 evaluate(
     const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const = 0;
   // return brdf*|cos|/pdf (to reduce unneccessary calc)
   // this func directly calc beta(as pbrt)
+  // if return black, the sample ray is invalid!
   virtual glm::vec3 sample_ev(
     const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const = 0;
+
+  // return pdf (respect to solid angle)
+  virtual float sample_pdf(
+    const Intersection& itsc, const Ray& ray_i, const Ray& ray_o) const = 0;
+  
+  inline virtual bool needMIS(const Intersection& itsc) const {return false;}
 };
 
 /************************BSSRDF Base******************************/
@@ -57,6 +64,8 @@ public:
     const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const override;
   glm::vec3 sample_ev(
     const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const override;
+  float sample_pdf(
+    const Intersection& itsc, const Ray& ray_i, const Ray& ray_o) const override;
 };
 
 /************************LambertianDiffuse******************************/
@@ -72,6 +81,8 @@ public:
     const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const override;
   glm::vec3 sample_ev(
     const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const override;
+  float sample_pdf(
+    const Intersection& itsc, const Ray& ray_i, const Ray& ray_o) const override;
 };
 
 /************************NoFrSpecular******************************/
@@ -92,6 +103,11 @@ public:
     ray_i.d = -ray_o.d;
     return glm::vec3(1.0f);
   }
+
+  float sample_pdf(
+    const Intersection& itsc, const Ray& ray_i, const Ray& ray_o) const override {
+    return 0.0f;
+  }
 };
 
 /************************NoFrSpecular******************************/
@@ -111,6 +127,11 @@ public:
 
   glm::vec3 sample_ev(
     const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const override;
+  
+  float sample_pdf(
+    const Intersection& itsc, const Ray& ray_i, const Ray& ray_o) const override {
+    return 0.0f;
+  }
 };
 
 /************************GGX******************************/
@@ -135,6 +156,14 @@ public:
 
   glm::vec3 sample_ev(
     const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const override;
+  
+  float sample_pdf(
+    const Intersection& itsc, const Ray& ray_i, const Ray& ray_o) const override;
+  
+  inline virtual bool needMIS(const Intersection& itsc) const {
+    //if(roughness->tex2D(itsc.itscVtx.uv).x < 0.1f)
+    return true;
+  }
 };
 
 
@@ -162,6 +191,11 @@ public:
 
   glm::vec3 sample_ev(
     const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const override;
+
+  float sample_pdf(
+    const Intersection& itsc, const Ray& ray_i, const Ray& ray_o) const override{
+    return 0.0f;
+  }
 };
 
 /************************HenyeyPhase******************************/
@@ -180,11 +214,14 @@ public:
 
   // return phase distribution value
   inline glm::vec3 evaluate(
-    const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const {
+    const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const override{
     float cosTheta = glm::dot(ray_o.d, ray_i.d);
     return glm::vec3(0.25f*INV_PI*(1-g*g)/ (1+g*g+2*g*cosTheta));
   }
 
   glm::vec3 sample_ev(
-    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const ;
+    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const override;
+
+  float sample_pdf(
+    const Intersection& itsc, const Ray& ray_i, const Ray& ray_o) const override;
 };

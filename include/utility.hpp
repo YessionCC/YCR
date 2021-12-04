@@ -48,16 +48,37 @@ inline float FrDielectricReflect(
   Refract(dir_o, normal, eataI, eataT, t1, cosThetaT); // never return true
   float cosThetaI = glm::dot(dir_o, normal);
   float t = FrDielectric(cosThetaI, cosThetaT, eataI, eataT);
-  if(t > 2.0f) {
-    int a = 1;
-  }
   return t;
 }
 
-inline float paToPw(float pdf, float dist2, float cosTheta) {
+inline float PaToPw(float pdf, float dist2, float cosTheta) {
   return pdf*dist2/cosTheta;
 }
 
-inline float pwToPa(float pdf, float dist2, float cosTheta) {
+inline float PwToPa(float pdf, float dist2, float cosTheta) {
   return pdf*cosTheta/dist2;
+}
+
+// pdf1**2 / (pdf1**2+pdf2**2)
+inline float PowerHeuristicWeight(float pdf1, float pdf2) {
+  return 1.0f/(1.0f+(pdf2/pdf1)*(pdf2/pdf1));
+}
+
+inline void CheckRadiance(glm::vec3 L, glm::vec2 rasPos) {
+  if(L.x<0 || L.y<0 || L.z<0) {
+    std::cout<<"find negative radiance: "
+      <<rasPos.x<<" "<<rasPos.y<<std::endl;
+  }
+  if(L.x>1e5 || L.y>1e5 || L.z>1e5) {
+    std::cout<<"find huge radiance: "
+      <<rasPos.x<<" "<<rasPos.y<<std::endl;
+  }
+  if(std::isnan(L.x) || std::isnan(L.y) || std::isnan(L.z)) {
+    std::cout<<"find NaN radiance: "
+      <<rasPos.x<<" "<<rasPos.y<<std::endl;
+  }
+}
+
+inline bool IsBlack(glm::vec3 L) {
+  return L.x == 0.0f && L.y == 0.0f && L.z ==0.0f;
 }

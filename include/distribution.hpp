@@ -63,7 +63,15 @@ public:
   }
 
   inline float getSumPdf() const {return sum_pdf;}
-
+  inline float getPdf(int pos) const {
+    if(cdf.size() == 0) {
+      std::cout << "ERROR: DD1D 0 size!"<<std::endl;
+      return 0.0f;
+    }
+    if(pos >= cdf.size()) pos = cdf.size() - 1;
+    if(pos == 0) return cdf[pos];
+    return cdf[pos]-cdf[pos-1];
+  }
 };
 
 class DiscreteDistribution2D {
@@ -145,4 +153,9 @@ public:
 
   inline int getRow() const {return row;}
   inline int getCol() const {return col;}
+
+  inline float getPdf(int posx, int posy) const {
+    if(posy >= ccdf.size()) posy = ccdf.size();
+    return ppdf[posy].getPdf(posx);
+  }
 };

@@ -14,7 +14,7 @@ int SubPathGenerator::createSubPath(
   
   for(int bounce=0; bounce<max_bounce; bounce++) {
 
-    if(beta.x == 0.0f && beta.y == 0.0f && beta.z == 0.0f) {
+    if(IsBlack(beta)) {
       tstate = TerminateState::TotalBlack;
       return bounce;
     }
@@ -37,9 +37,15 @@ int SubPathGenerator::createSubPath(
 
     if(mesh->light) { // handle dirac light
       if(bounce == 0 || _HasType(pathVertices[bounce-1].bxdfType, DELTA)) {
-        diracRadiance = mesh->light->evaluate(itsc, -ray.d)*beta ;
+        diracRadiance += mesh->light->evaluate(itsc, -ray.d)*beta ;
       } 
-      tstate = TerminateState::ItscLight;
+      if(!bxdf) { // we allow no bxdf light
+        tstate = TerminateState::ItscLight;
+        return bounce;
+      }
+    }
+    if(!bxdf) {
+      std::cout<<"WARNING: Detect No BXDF Material(not light)"<<std::endl;
       return bounce;
     }
     
@@ -72,13 +78,93 @@ int SubPathGenerator::createSubPath(
   return max_bounce;
 }
 
-float PathIntegrator::estimateDirectLightByLi(
+void PathIntegrator::estimateDirectLightByLi(
   const Scene& scene, PathVertex& pvtx, glm::vec3& L) const{
+  //float lpdf = scene.sampleALight(lt);
+  // float lpdf = scene.dynamicSampleALight(
+  //   lt, pathVtxs[i].itsc.itscVtx.position);
+  // lpdf *= lt->getItscOnLight(litsc, pathVtxs[i].itsc.itscVtx.position);
+  Ray rayToLight, lastRay;
+  Intersection litsc; const Light* lt; float len;
+  glm::vec3 tr(1.0f); L = glm::vec3(0.0f);
+  DiscreteDistribution1D ldd1d;
+  scene.getDynamicSampleALightDD1D(pvtx.itsc.itscVtx.position, ldd1d);
+  float lpdf = scene.dynamicSampleALight(ldd1d, lt);
+  lpdf *= lt->getItscOnLight(litsc, pvtx.itsc.itscVtx.position);
+  // TODO
+  glm::vec3 dirToLight = litsc.itscVtx.position - 
+    pvtx.itsc.itscVtx.position;
+  len = glm::length(dirToLight);
+  dirToLight /= len;
 
+  float lCosTheta = litsc.itscVtx.cosTheta(-dirToLight);
+  if(lCosTheta <= 0.0f) return;
+
+  // REFLECT BXDF exitant radiance always on the same side with normal
+  if(_HasType(pvtx.bxdfType, REFLECT) && 
+    pvtx.itsc.cosTheta(dirToLight) < 0) return; 
+  // TR BXDF exitant radiance always on the opposite side with normal
+  else if(_HasType(pvtx.bxdfType, TRANSMISSION) && 
+    pvtx.itsc.cosTheta(dirToLight) > 0) return; 
+  // RTBoth BXDF exitant radiance uncertain
+  else if(_HasType(pvtx.bxdfType, RTBoth)) {
+    pvtx.itsc.maxErrorOffset(
+      dirToLight, 
+      pvtx.itsc.itscVtx.position);
+  }
+
+  rayToLight.o = pvtx.itsc.itscVtx.position;
+  rayToLight.d = dirToLight;
+
+  const Mesh* mesh = pvtx.itsc.prim->getMesh();
+
+  //if(scene.occlude(rayToLight, len, litsc.prim)) return; 
+  if(scene.occlude(rayToLight, len, tr, pvtx.inMedium, litsc.prim)) 
+    return; 
+  //if(scene.occlude(pvtx.itsc, litsc, rayToLight, len)) return; 
+
+  float invdis2 = 1.0f/(len*len);
+  glm::vec3 leCosDivR2 = 
+    invdis2*lCosTheta*lt->evaluate(litsc, -rayToLight.d);
+  const BXDF* lastBxdf = mesh->bxdf;
+  if(!lastBxdf) return; //
+  lastRay.o = rayToLight.o;
+  lastRay.d = pvtx.dir_o;
+
+  glm::vec3 lastBeta = lastBxdf->evaluate(pvtx.itsc, lastRay, rayToLight);
+  // debug error detect
+  L = tr*pvtx.beta*leCosDivR2*lastBeta / lpdf;
 }
 
 float PathIntegrator::estimateDirectLightByBSDF(
   const Scene& scene, PathVertex& pvtx, glm::vec3& L) const {
+
+  Ray rayToLight, lastRay; 
+  glm::vec3 tr(1.0f); L = glm::vec3(0.0f);
+  const Mesh* mesh = pvtx.itsc.prim->getMesh();
+  const BXDF* bxdf = mesh->bxdf;
+
+  lastRay.o = pvtx.itsc.itscVtx.position;
+  lastRay.d = pvtx.dir_o;
+  
+  glm::vec3 beta = bxdf->sample_ev(pvtx.itsc, lastRay, rayToLight);
+  float bxdfPdf = bxdf->sample_pdf(pvtx.itsc, lastRay, rayToLight);
+  if(IsBlack(beta)) return bxdfPdf;
+
+  Intersection itsc = scene.intersectDirectly(rayToLight, pvtx.inMedium, tr);
+  if(itsc.prim) {
+    const Light* lt = itsc.prim->getMesh()->light;
+    if(lt) {
+      float cosTheta = itsc.itscVtx.cosTheta(-rayToLight.d);
+      if(cosTheta <= 0.0f) return bxdfPdf;
+      L = tr*pvtx.beta*beta*lt->evaluate(itsc, -rayToLight.d);
+    }
+  }
+  else {
+    if(scene.envLight) // TODO: currently we only need to take envLight into account
+      L = tr*pvtx.beta*beta*scene.envLight->evaluate(itsc, -rayToLight.d);
+  }
+  return bxdfPdf;
 }
 
 void PathIntegrator::render(const Scene& scene, SubPathGenerator& subpathGen,
@@ -88,7 +174,7 @@ void PathIntegrator::render(const Scene& scene, SubPathGenerator& subpathGen,
   auto& pathVtxs = subpathGen.getPathVtxs();
 
   while(rayGen.genNextRay(ray, rasPos)) {
-    // if((int)rasPos.x == 344 && (int)rasPos.y == 169) {
+    // if((int)rasPos.x == 267 && (int)rasPos.y == 210) {
     //   int a = 0;
     // }
 
@@ -98,70 +184,20 @@ void PathIntegrator::render(const Scene& scene, SubPathGenerator& subpathGen,
     int bounce = subpathGen.createSubPath(ray, scene, max_bounce);
     //__EndTimeAnalyse__
 
-    Ray rayToLight, lastRay;
-    Intersection litsc; const Light* lt; float len;
-    glm::vec3 radiance = subpathGen.getDiracLight(), tr = glm::vec3(1.0f);
+    glm::vec3 radiance = subpathGen.getDiracLight(), L1, L2;
 
     //__StartTimeAnalyse__("dirlight")
     for(unsigned int i = 0; i<pathVtxs.size(); i++) {
       
       if(_HasType(pathVtxs[i].bxdfType, DELTA)) continue;
 
-      //float lpdf = scene.sampleALight(lt);
-      float lpdf = scene.dynamicSampleALight(
-        lt, pathVtxs[i].itsc.itscVtx.position);
-      lpdf *= lt->getItscOnLight(litsc, pathVtxs[i].itsc.itscVtx.position);
-      // TODO
-      glm::vec3 dirToLight = litsc.itscVtx.position - 
-        pathVtxs[i].itsc.itscVtx.position;
-      len = glm::length(dirToLight);
-      dirToLight /= len;
+      estimateDirectLightByLi(scene, pathVtxs[i], L1);
+      CheckRadiance(L1, rasPos);
 
-      // REFLECT BXDF exitant radiance always on the same side with normal
-      if(_HasType(pathVtxs[i].bxdfType, REFLECT) && 
-        pathVtxs[i].itsc.cosTheta(dirToLight) < 0) continue; 
-      // TR BXDF exitant radiance always on the opposite side with normal
-      else if(_HasType(pathVtxs[i].bxdfType, TRANSMISSION) && 
-        pathVtxs[i].itsc.cosTheta(dirToLight) > 0) continue; 
-      // RTBoth BXDF exitant radiance uncertain
-      else if(_HasType(pathVtxs[i].bxdfType, RTBoth)) {
-        pathVtxs[i].itsc.maxErrorOffset(
-          dirToLight, 
-          pathVtxs[i].itsc.itscVtx.position);
-      }
+      //estimateDirectLightByBSDF(scene, pathVtxs[i], L2);
+      //CheckRadiance(L2, rasPos);
 
-      rayToLight.o = pathVtxs[i].itsc.itscVtx.position;
-      rayToLight.d = dirToLight;
-
-      const Mesh* mesh = pathVtxs[i].itsc.prim->getMesh();
-
-      //if(scene.occlude(rayToLight, len, litsc.prim)) continue; 
-      if(scene.occlude(rayToLight, len, tr, pathVtxs[i].inMedium, litsc.prim)) 
-        continue; 
-      //if(scene.occlude(pathVtxs[i].itsc, litsc, rayToLight, len)) continue; 
-
-      float invdis2 = 1.0f/(len*len);
-      glm::vec3 leCosDivR2 = 
-        invdis2*lt->evaluate(litsc, -rayToLight.d);
-      const BXDF* lastBxdf = mesh->bxdf;
-      if(!lastBxdf) continue; //
-      lastRay.o = rayToLight.o;
-      lastRay.d = pathVtxs[i].dir_o;
-
-      glm::vec3 lastBeta = lastBxdf->evaluate(pathVtxs[i].itsc, lastRay, rayToLight);
-      // debug error detect
-      glm::vec3 pathRad = tr*pathVtxs[i].beta*leCosDivR2*lastBeta / lpdf;
-
-      if(pathRad.x<0 || pathRad.y<0 || pathRad.z<0) {
-        std::cout<<"find negative radiance: "
-          <<rasPos.x<<" "<<rasPos.y<<std::endl;
-      }
-      if(pathRad.x>1e5 || pathRad.y>1e5 || pathRad.z>1e5) {
-        std::cout<<"find huge radiance: "
-          <<rasPos.x<<" "<<rasPos.y<<std::endl;
-      }
-
-      radiance += pathRad;
+      radiance += L1;//(L1+L2)*0.5f;
     }
     //__EndTimeAnalyse__
 
