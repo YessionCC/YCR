@@ -2,6 +2,7 @@
 #include "vertex.hpp"
 #include "distribution.hpp"
 #include "medium.hpp"
+#include "texture.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -98,6 +99,14 @@ void Model::setLightForAllMeshes(const Light* light) {
 void Model::setMediumForAllMeshes(const Medium* medium, bool isInside) {
   if(isInside) for(Mesh* mesh: meshes) mesh->mediumInside = medium;
   else for(Mesh* mesh: meshes) mesh->mediumOutside = medium;
+}
+
+void Model::setNormalMapForAllMeshes(const Texture* tex) {
+  for(Mesh* mesh: meshes) mesh->normalMap = tex;
+}
+
+void Model::setMeshPurposes(Mesh::MeshPurpose purpose) {
+  for(Mesh* mesh: meshes) mesh->purpose = purpose;
 }
 
 void Model::processNode(aiNode *node, const aiScene *scene){

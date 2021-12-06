@@ -39,10 +39,13 @@ public:
   void translate(glm::vec3 translate);
   void scale(glm::vec3 scale);
   void rotate(glm::vec3 axis, float angle);
+  void addMesh(Mesh* mesh);
+
   void setBxdfForAllMeshes(const BXDF* bxdf);
   void setLightForAllMeshes(const Light* light);
   void setMediumForAllMeshes(const Medium* medium, bool isInside = true);
-  void addMesh(Mesh* mesh);
+  void setNormalMapForAllMeshes(const Texture* tex);
+  void setMeshPurposes(Mesh::MeshPurpose purpose);
 
   void toPointClouds(PCShower& pc, int tot_pcn, glm::vec3 col);
 };

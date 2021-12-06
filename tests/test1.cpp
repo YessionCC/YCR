@@ -37,7 +37,7 @@ int main() {
   imgtex->setUVScale({5.0f, 5.0f});
   imgtex->setUVOffset({0.6f, 0.2f});
   BXDF* bxdf2 = new LambertianDiffuse(imgtex);
-  BXDF* bxdf3 = new NoFrSpecular(new SolidTexture(glm::vec3(1.0f)));
+  BXDF* bxdf3 = new PerfectSpecular(new SolidTexture(glm::vec3(1.0f)));
   BXDF* bxdf4 = new LambertianDiffuse(new SolidTexture(glm::vec3(1.0f)));
   
   bkg.setBxdfForAllMeshes(bxdf4);

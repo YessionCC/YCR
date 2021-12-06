@@ -11,9 +11,17 @@ VertexMesh::~VertexMesh() {
 // will copy vertex data but will share light and bxdf
 Mesh* VertexMesh::copy() const {
   VertexMesh* mesh = new VertexMesh;
+  mesh->type = type;
+  mesh->purpose = purpose;
+
   mesh->indices = indices;
+
   mesh->light = light;
+  mesh->mediumInside = mediumInside;
+  mesh->mediumOutside = mediumOutside;
+  mesh->normalMap = normalMap;
   mesh->bxdf = bxdf;
+
   for(Vertex* v : vertices) 
     mesh->vertices.push_back(new Vertex(*v));
   return mesh;
@@ -96,8 +104,15 @@ CustomMesh::~CustomMesh() {
 // will copy vertex data but will share light and bxdf
 Mesh* CustomMesh::copy() const {
   CustomMesh* mesh = new CustomMesh;
+  mesh->type = type;
+  mesh->purpose = purpose;
+
   mesh->light = light;
+  mesh->mediumInside = mediumInside;
+  mesh->mediumOutside = mediumOutside;
+  mesh->normalMap = normalMap;
   mesh->bxdf = bxdf;
+  
   for(Primitive* prim: prims)
     mesh->prims.push_back(prim->copy(mesh));
   return mesh;

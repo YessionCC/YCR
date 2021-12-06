@@ -2,15 +2,21 @@
 
 #include "bxdf.hpp"
 #include "light.hpp"
+#include "material.hpp"
 #include <glm/glm.hpp>
 
 class Medium;
+class Texture;
 
 class Mesh {
 public:
   enum MeshType {
     VertexMesh,
     CustomMesh
+  };
+  enum MeshPurpose {
+    Normal, // for render
+    MediumBound // for medium bound( change inMedium )
   };
 protected:
   MeshType type;
@@ -20,10 +26,14 @@ public:
   const Medium* mediumInside = nullptr;
   const Medium* mediumOutside = nullptr;
   const Light* light = nullptr; //if null, it is not emissive
+  const Texture* normalMap = nullptr;
+
+  MeshPurpose purpose = MeshPurpose::Normal;
 
   virtual ~Mesh() {delete bxdf; delete light;} //
   Mesh(MeshType type): type(type) {}
-  MeshType getType() const {return type;}
+
+  inline MeshType getType() const {return type;}
 
   virtual Mesh* copy() const = 0;
   virtual void translate(glm::vec3) = 0;

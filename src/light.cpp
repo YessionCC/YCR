@@ -110,7 +110,6 @@ float EnvironmentLight::getItscPdf(const Intersection& itsc, const Ray& rayToLig
   if(isSolid) return 1.0f/(PI4*sceneDiameter*sceneDiameter);
   float theta = glm::acos(rayToLight.d.y); // world up
   float phi = std::atan2(rayToLight.d.z, rayToLight.d.x);
-  if(std::isnan(phi)) phi = 0.0f;
   if(phi < 0) phi += PI2;
   int x = phi*INV_PI2*dd2d.getCol();
   int y = theta*INV_PI*dd2d.getRow();

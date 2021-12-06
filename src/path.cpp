@@ -25,7 +25,7 @@ int SubPathGenerator::createSubPath(
 
     if(!itsc.prim) {
       if(scene.envLight &&  // handle infinite far envLight
-        (bounce == 0 || _HasType(pathVertices[bounce-1].bxdfType, DELTA))) {
+        (bounce == 0 || _HasFeature(pathVertices[bounce-1].bxdfType, DELTA))) {
         diracRadiance = scene.envLight->evaluate(itsc, -ray.d)*beta;
       }
       tstate = TerminateState::NoItsc; 
@@ -36,7 +36,7 @@ int SubPathGenerator::createSubPath(
     const BXDF* bxdf = mesh->bxdf;
 
     if(mesh->light) { // handle dirac light
-      if(bounce == 0 || _HasType(pathVertices[bounce-1].bxdfType, DELTA)) {
+      if(bounce == 0 || _HasFeature(pathVertices[bounce-1].bxdfType, DELTA)) {
         diracRadiance += mesh->light->evaluate(itsc, -ray.d)*beta ;
       } 
       if(!bxdf) { // we allow no bxdf light
@@ -64,12 +64,12 @@ int SubPathGenerator::createSubPath(
 
     // if the bxdf is medium(not has medium, like pureTrans), its not surface, so no shift
     // if the bxdf is RTBoth, then the offset is up to the direct light
-    if(!_IsType(pvtx.bxdfType, MEDIUM) &&
+    if(!_IsType(pvtx.bxdfType, NoSurface) &&
        !_IsType(pvtx.bxdfType, RTBoth))
       itsc.maxErrorOffset(ray.d, ray.o);//
 
     // if is medium particle, it always in medium
-    if(_IsType(pvtx.bxdfType, MEDIUM)) continue;
+    if(_IsType(pvtx.bxdfType, NoSurface)) continue;
     if(itsc.cosTheta(ray.d) < 0) inMedium = mesh->mediumInside;
     else inMedium = mesh->mediumOutside;
     
@@ -103,13 +103,13 @@ void PathIntegrator::estimateDirectLightByLi(
   if(lCosTheta <= 0.0f) return;
 
   // REFLECT BXDF exitant radiance always on the same side with normal
-  if(_HasType(pvtx.bxdfType, REFLECT) && 
+  if(_IsType(pvtx.bxdfType, REFLECT) && 
     pvtx.itsc.cosTheta(dirToLight) < 0) return; 
   // TR BXDF exitant radiance always on the opposite side with normal
-  else if(_HasType(pvtx.bxdfType, TRANSMISSION) && 
+  else if(_IsType(pvtx.bxdfType, TRANSMISSION) && 
     pvtx.itsc.cosTheta(dirToLight) > 0) return; 
   // RTBoth BXDF exitant radiance uncertain
-  else if(_HasType(pvtx.bxdfType, RTBoth)) {
+  else if(_IsType(pvtx.bxdfType, RTBoth)) {
     pvtx.itsc.maxErrorOffset(
       dirToLight, 
       pvtx.itsc.itscVtx.position);
@@ -218,13 +218,13 @@ void PathIntegrator::render(const Scene& scene, SubPathGenerator& subpathGen,
     for(unsigned int i = 0; i<pathVtxs.size(); i++) {
       
       PathVertex& pvtx = pathVtxs[i];
-      if(_HasType(pvtx.bxdfType, DELTA)) continue;
+      if(_HasFeature(pvtx.bxdfType, DELTA)) continue;
 
       scene.getPositionLightDD1D(pvtx.itsc.itscVtx.position, ldd1d);
 
       bool needMis = false;
       const BXDF* bxdf = pvtx.itsc.prim->getMesh()->bxdf;
-      //if(bxdf) needMis = bxdf->needMIS(pvtx.itsc);
+      if(bxdf) needMis = bxdf->needMIS(pvtx.itsc);
 
       // Default sample by Li
       estimateDirectLightByLi(scene, ldd1d, pvtx, L1, needMis);

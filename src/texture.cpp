@@ -83,8 +83,6 @@ float ImageTexture::generateDistribution2D(DiscreteDistribution2D& dd2d) const {
 }
 
 float ImageTexture::getAverageLuminance() const {
-  static float avgLumi = -1.0f;
-  if(avgLumi >= 0.0f) return avgLumi;
   float tot_lumi = 0.0f;
   for(int i = 0; i<height; i++) {
     for(int j = 0; j<width; j++) {
@@ -95,6 +93,5 @@ float ImageTexture::getAverageLuminance() const {
       tot_lumi += Luminance(col);
     }  
   }
-  avgLumi = tot_lumi / (height*width);
-  return avgLumi;
+  return tot_lumi / (height*width);
 }

@@ -15,9 +15,9 @@
 PCShower pc;
 Scene scene;
 Film film(800, 800, 60);
-//Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
+Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
 //Camera cam(film, {0, 14, 35}, {0, -0.4f, -1});
-Camera cam(film, {0, 14, 50}, {0, -0.4f, -1});
+//Camera cam(film, {0, 14, 50}, {0, -0.4f, -1});
 RenderProcShower rShower(film);
 ParallelRenderer pRenderer(scene, cam, film, 1024, 12);
 
@@ -52,26 +52,29 @@ int main() {
   Light* pLight = new PointLight(glm::vec3(1000), glm::vec3(6,6,6));
   Light* dLight = new DirectionalLight(glm::vec3(3), glm::vec3(0,-1,0));
 
-  BXDF* bxdf = new GlassSpecular(new SolidTexture(glm::vec3(1.0f)), 1.0f, 1.4f);
+  //BXDF* bxdf = new GlassSpecular(new SolidTexture(glm::vec3(1.0f)), 1.0f, 1.4f);
   ImageTexture* imgtex = 
     new ImageTexture("/home/yession/Code/Cpp/ycr/models/Cube/grid2.jpeg");
   imgtex->setUVScale({5.0f, 5.0f});
   imgtex->setUVOffset({0.6f, 0.2f});
   ImageTexture* imgtex2 = 
     new ImageTexture("/home/yession/Code/Cpp/ycr/models/Cube/grid.jpeg");
+  ImageTexture* blockNormal = 
+    new ImageTexture("/home/yession/Code/Cpp/ycr/models/Cube/rough.jpeg");
   BXDF* bxdf2 = new LambertianDiffuse(imgtex);
   BXDF* bxdf5 = new LambertianDiffuse(imgtex2);
-  BXDF* bxdf3 = new NoFrSpecular(new SolidTexture(glm::vec3(1.0f)));
+  BXDF* bxdf3 = new PerfectSpecular(new SolidTexture(glm::vec3(1.0f)));
   BXDF* bxdf4 = new LambertianDiffuse(new SolidTexture(glm::vec3(1.0f)));
   BXDF* bxdf6 = new GGX(1.0f, 1.4f, new SolidTexture(0.002f), new SolidTexture(1.0f));
   BXDF* bxdf7 = new GGX(1.0f, 1.4f, new SolidTexture(0.002f), imgtex);
   
   bkg.setBxdfForAllMeshes(bxdf4);
   bkg2.setBxdfForAllMeshes(bxdf7);//
-  sphere.setBxdfForAllMeshes(bxdf6);
+  sphere.setBxdfForAllMeshes(bxdf4);
+  sphere.setNormalMapForAllMeshes(blockNormal);
   sphere3.setBxdfForAllMeshes(bxdf5);
   cube.setBxdfForAllMeshes(bxdf5);
-  nano.setBxdfForAllMeshes(bxdf);
+  nano.setBxdfForAllMeshes(bxdf4);
   cube.rotate({0,1,0}, 30);
   cube.scale({5,5,5});
   cube.translate({-2, -4, -6});
@@ -90,10 +93,10 @@ int main() {
   // sphere3.translate({-2,18,-1});
 
   Model sphere2 = sphere;
-  sphere2.setBxdfForAllMeshes(bxdf3);
+  sphere2.setBxdfForAllMeshes(bxdf4);
   sphere2.translate({8, 0, 0});
   Model cube2 = cube;
-  cube2.setBxdfForAllMeshes(bxdf);
+  cube2.setBxdfForAllMeshes(bxdf4);
   cube2.scale(glm::vec3(500, 500, 500));
   cube2.translate({16,25,20});
   // sphere.scale(glm::vec3(1.5));
@@ -103,24 +106,24 @@ int main() {
   //Light* light3 = new ShapeLight(new SolidTexture({0.2, 0.2, 0.8}), sphere3);
   //Light* light4 = new ShapeLight(new SolidTexture({0.8, 0.2, 0.2}), sphere2);
 
-  glm::vec3 sigmaS(0.6); float sT = 0.006;
+  glm::vec3 sigmaS(0.6); float sT = 0.6;
   Medium* medium = new Medium(
-    sT, sigmaS, nullptr, new HenyeyPhase(0.5, sigmaS));
+    sT, sigmaS, &sphere3, new HenyeyPhase(0.5, sigmaS));
 
-  scene.addGlobalMedium(medium);
+  //scene.addGlobalMedium(medium);
   //scene.addModel(nano);
-  scene.addLight(light);
+  //scene.addLight(light);
   //scene.addLight(light3);
   //scene.addLight(light4);
-  //scene.addLight(envLight);
+  scene.addLight(envLight);
   //scene.addLight(light2);
   //scene.addModel(bkg);
   scene.addModel(bkg2);
   scene.addModel(sphere);
   scene.addModel(sphere2);
-  scene.addModel(sphere3);
+  //scene.addModel(sphere3);
   scene.addModel(cube);
-  //scene.addMedium(medium, false);
+  scene.addMedium(medium, true);
   // scene.addModel(cube2);
 
   scene.init();

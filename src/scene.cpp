@@ -126,6 +126,16 @@ Intersection Scene::intersect(
   bvh.intersect(ray, itsc, 0, prim);
   if(itsc.prim != nullptr) {
     itsc.prim->handleItscResult(itsc);
+    const Texture* nMap = itsc.prim->getMesh()->normalMap;
+    if(nMap) { // bump Mapping
+      glm::vec3 normal = nMap->tex2D(itsc.itscVtx.uv);
+      normal = glm::normalize(normal)*2.0f - 1.0f;
+      normal = glm::normalize(itsc.toWorldSpace(normal));
+      // reconstruct tbn coord.
+      itsc.itscVtx.btangent = glm::normalize(glm::cross(itsc.itscVtx.tangent, normal));
+      itsc.itscVtx.tangent = glm::cross(normal, itsc.itscVtx.btangent);
+      itsc.itscVtx.normal = normal;
+    }
   }
   //__EndTimeAnalyse__
   return itsc;
@@ -145,7 +155,7 @@ Intersection Scene::intersectDirectly(
     if(!itsc.prim) return itsc;
     const Mesh* mesh = itsc.prim->getMesh();
 
-    if(_HasType(mesh->getType(), MEDIUM)) {
+    if(mesh->purpose == Mesh::MeshPurpose::MediumBound) {
       testRay.o = itsc.itscVtx.position;
       itsc.maxErrorOffset(testRay.d, testRay.o);
       if(itsc.cosTheta(testRay.d) < 0) medium = mesh->mediumInside;
@@ -185,7 +195,7 @@ bool Scene::occlude(const Ray& ray, float t_limit, glm::vec3& tr,
     // when this case, the light have itsc in fact
     if(!itsc.prim || itsc.prim == prim_avd) return false;
     const Mesh* mesh = itsc.prim->getMesh();
-    if(_HasType(mesh->getType(), MEDIUM)) {
+    if(mesh->purpose == Mesh::MeshPurpose::MediumBound) {
       t_limit -= itsc.t;
       testRay.o = itsc.itscVtx.position;
       itsc.maxErrorOffset(testRay.d, testRay.o);

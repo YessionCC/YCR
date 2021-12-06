@@ -18,6 +18,7 @@ Medium::Medium(float sigmaT, glm::vec3 sigmaS,
 void Medium::addToScene(Scene& scene, bool noBXDF) {
   if(!bound) return;
   bound->setMediumForAllMeshes(this);
+  bound->setMeshPurposes(Mesh::MeshPurpose::MediumBound);
   if(noBXDF) bound->setBxdfForAllMeshes(new PureTransmission()); // memory manager notice 
   scene.addModel(*bound);
 }

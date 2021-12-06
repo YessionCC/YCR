@@ -24,11 +24,22 @@ float LambertianDiffuse::sample_pdf(
   return INV_PI*glm::max(0.0f, itsc.itscVtx.cosTheta(ray_i.d));
 }
 
-glm::vec3 NoFrSpecular::sample_ev(
+glm::vec3 PerfectSpecular::sample_ev(
   const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const {
   ray_i.o = itsc.itscVtx.position;
   ray_i.d = Reflect(ray_o.d, itsc.itscVtx.normal);
   return absorb->tex2D(itsc.itscVtx.uv);
+}
+
+glm::vec3 PerfectTransimission::sample_ev(
+  const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const {
+  ray_i.o = itsc.itscVtx.position;
+  bool res = Refract(ray_o.d, itsc.itscVtx.normal, IOR, ray_i.d);
+  if(!res) return glm::vec3(0.0f);
+  // need handle asymetric
+  if(itsc.itscVtx.cosTheta(ray_o.d) < 0.0f)
+    return 1.0f/(IOR*IOR) * absorb->tex2D(itsc.itscVtx.uv);
+  else return (IOR*IOR) * absorb->tex2D(itsc.itscVtx.uv);
 }
 
 float GGX::roughnessToAlpha(float roughness) const {
@@ -110,33 +121,6 @@ float GGX::sample_pdf(
   float cosWh = itsc.itscVtx.cosTheta(wh);
   float cosWhI = glm::max(0.0f, glm::dot(ray_i.d, wh));
   return normalDistr*cosWh/(4.0f*cosWhI);
-}
-
-glm::vec3 GlassSpecular::sample_ev(
-  const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const {
-  ray_i.o = itsc.itscVtx.position;
-  float cosThetaI = itsc.itscVtx.cosTheta(ray_o.d);
-  float cosThetaT; float et = eataT, ei = eataI;
-  glm::vec3 normal(itsc.itscVtx.normal);
-  if(cosThetaI < 0) {
-    std::swap(et, ei);
-    normal = -normal;
-    cosThetaI = -cosThetaI;
-  }
-  bool res = Refract(ray_o.d, normal, ei, et, ray_i.d, cosThetaT);
-  if(res) return absorbR->tex2D(itsc.itscVtx.uv);
-  float fr = FrDielectric(cosThetaI, cosThetaT, ei, et);
-  float u = _ThreadSampler.get1();
-  if(u < fr) {
-    ray_i.d = Reflect(ray_o.d, normal);
-    return absorbR->tex2D(itsc.itscVtx.uv); // fr*R/fr
-  }
-  else { // (1-fr)*eataI2/eataT2*R/(1-fr)
-    // NOTICE: no symmetric item!
-    // Here Assume trace from camera, 
-    // eataI should be the light enter side, so here use et
-    return (et*et/(ei*ei))*absorbT->tex2D(itsc.itscVtx.uv);
-  }
 }
 
 inline float HenyeyPhase::samplePhaseCosTheta() const { //
