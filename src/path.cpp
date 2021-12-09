@@ -38,6 +38,7 @@ int SubPathGenerator::createSubPath(
     }
 
     const Material& mat = itsc.prim->getMesh()->material;
+    if(itsc.cosTheta(ray.d)>0.0f) itsc.reverseNormal();
 
     if(mat.light) { // handle first/specular to shape light
       if(!itsc.normalReverse &&
@@ -80,8 +81,7 @@ int SubPathGenerator::createSubPath(
 
     // if is medium particle, it always in medium
     if(_IsType(bxdf->getType(), NoSurface)) continue;
-    if(itsc.normalReverse) inMedium = mat.mediumInside;
-    else inMedium = mat.mediumOutside;
+    inMedium = itsc.isRayToInside(ray)? mat.mediumInside:mat.mediumOutside;
     
   }
   tstate = TerminateState::UpToMaxBounce;

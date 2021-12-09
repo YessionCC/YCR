@@ -22,6 +22,8 @@ public:
   glm::vec3 itscError; // the error bound of the itsc point
   glm::vec3 geoNormal; // the real normal for the surface
   const Primitive* prim;
+
+  // shows the itsc is in the inside or outside surface
   bool normalReverse = false;
 
   Intersection(): t(FLOAT_MAX), localUV(0), 
@@ -49,6 +51,12 @@ public:
     geoNormal = -geoNormal;
     itscVtx.normal = -itscVtx.normal; // TODO: do not reverse tangent?
     normalReverse = true;
+  }
+
+  // make sure normalReverse is right
+  inline bool isRayToInside(const Ray& ray) const {
+    bool ct = cosTheta(ray.d) < 0.0f;
+    return normalReverse ^ ct;
   }
 
   // offset pos by error and the relation of normal and dir

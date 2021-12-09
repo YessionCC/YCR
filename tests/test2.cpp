@@ -78,9 +78,9 @@ int main() {
   
   bkg.setBxdfForAllMeshes(bxdf4);
   bkg2.setBxdfForAllMeshes(bxdf6);//
-  sphere.setBxdfForAllMeshes(bxdfc);
+  sphere.setBxdfForAllMeshes(bxdf6);
   //sphere.setNormalMapForAllMeshes(blockNormal);
-  sphere3.setBxdfForAllMeshes(bxdf3);
+  //sphere3.setBxdfForAllMeshes(bxdf3);
   cube.setBxdfForAllMeshes(bxdf5);
   nano.setBxdfForAllMeshes(bxdf7);
   deer.setBxdfForAllMeshes(bxdf7);
@@ -119,7 +119,7 @@ int main() {
 
   glm::vec3 sigmaS(0.6); float sT = 0.6;
   Medium* medium = new Medium(
-    sT, sigmaS, nullptr, new HenyeyPhase(0.5, sigmaS));
+    sT, sigmaS, &sphere3, new HenyeyPhase(0.5, sigmaS));
 
   //scene.addGlobalMedium(medium);
   //scene.addModel(nano);
@@ -132,10 +132,10 @@ int main() {
   scene.addModel(bkg2);
   scene.addModel(sphere);
   scene.addModel(sphere2);
-  scene.addModel(sphere3);
+  //scene.addModel(sphere3);
   scene.addModel(cube);
   //scene.addModel(deer);
-  //scene.addMedium(medium, true);
+  scene.addMedium(medium, true);
   // scene.addModel(cube2);
 
   scene.init();
