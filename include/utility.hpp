@@ -11,18 +11,13 @@ inline glm::vec3 Reflect(glm::vec3 dir_o, glm::vec3 normal) {
   return -dir_o + 2.0f*glm::dot(dir_o, normal)*normal;
 }
 
-// auto reverse normal
+// do not auto reverse normal
 // if return false: total reflect, no refract dir will return
 inline bool Refract(glm::vec3 dir_o, glm::vec3 normal, 
   float IOR, glm::vec3& dir_refr) {
   
   float idt = 1.0f / IOR;
   float cosThetaI = glm::dot(dir_o, normal);
-  if(cosThetaI < 0.0f) {
-    idt = IOR;
-    normal = -normal;
-    cosThetaI = -cosThetaI;
-  }
   float sinThetaI = glm::sqrt(1 - glm::min(1.0f, cosThetaI*cosThetaI));
   float sinThetaT = idt*sinThetaI;
   if(sinThetaT>1.0f) return false;

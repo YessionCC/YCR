@@ -39,8 +39,9 @@ int SubPathGenerator::createSubPath(
 
     const Material& mat = itsc.prim->getMesh()->material;
 
-    if(mat.light) { // handle dirac light
-      if(bounce == 0 || _HasFeature(pathVertices[bounce-1].bxdf->getType(), DELTA)) {
+    if(mat.light) { // handle first/specular to shape light
+      if(!itsc.normalReverse &&
+        (bounce == 0 || _HasFeature(pathVertices[bounce-1].bxdf->getType(), DELTA))) {
         diracRadiance += mat.light->evaluate(itsc, -ray.d)*beta ;
       } 
       if(!mat.bxdfNode) { // we allow no bxdf light
@@ -79,7 +80,7 @@ int SubPathGenerator::createSubPath(
 
     // if is medium particle, it always in medium
     if(_IsType(bxdf->getType(), NoSurface)) continue;
-    if(itsc.cosTheta(ray.d) < 0) inMedium = mat.mediumInside;
+    if(itsc.normalReverse) inMedium = mat.mediumInside;
     else inMedium = mat.mediumOutside;
     
   }
@@ -171,8 +172,7 @@ void PathIntegrator::estimateDirectLightByBSDF(
   if(itsc.prim) {
     lt = itsc.prim->getMesh()->material.light;
     if(lt) {
-      cosTheta = itsc.itscVtx.cosTheta(-rayToLight.d);
-      if(cosTheta <= 0.0f) return;
+      if(itsc.normalReverse) return;
       L = tr*pvtx.beta*beta*lt->evaluate(itsc, -rayToLight.d);
     }
     else return;
@@ -206,7 +206,7 @@ void PathIntegrator::render(const Scene& scene, SubPathGenerator& subpathGen,
   auto& pathVtxs = subpathGen.getPathVtxs();
 
   while(rayGen.genNextRay(ray, rasPos)) {
-    // if((int)rasPos.x == 459 && (int)rasPos.y == 150) {
+    // if((int)rasPos.x == 563 && (int)rasPos.y == 297) {
     //   int a = 0;
     // }
 

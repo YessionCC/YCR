@@ -128,6 +128,7 @@ Intersection Scene::intersect(
     itsc.prim->handleItscResult(itsc);
     itsc.prim->getMesh()->material.bumpMapping(itsc);
   }
+  if(itsc.cosTheta(ray.d) > 0.0f) itsc.reverseNormal();
   //__EndTimeAnalyse__
   return itsc;
 }
@@ -149,7 +150,7 @@ Intersection Scene::intersectDirectly(
     if(mesh->purpose == Mesh::MeshPurpose::MediumBound) {
       testRay.o = itsc.itscVtx.position;
       itsc.maxErrorOffset(testRay.d, testRay.o);
-      if(itsc.cosTheta(testRay.d) < 0) medium = mesh->material.mediumInside;
+      if(itsc.normalReverse) medium = mesh->material.mediumInside;
       else medium = mesh->material.mediumOutside;
     }
     else return itsc;
@@ -190,7 +191,7 @@ bool Scene::occlude(const Ray& ray, float t_limit, glm::vec3& tr,
       t_limit -= itsc.t;
       testRay.o = itsc.itscVtx.position;
       itsc.maxErrorOffset(testRay.d, testRay.o);
-      if(itsc.cosTheta(testRay.d) < 0) medium = mesh->material.mediumInside;
+      if(itsc.normalReverse) medium = mesh->material.mediumInside;
       else medium = mesh->material.mediumOutside;
     }
     else return true;

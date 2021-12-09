@@ -34,12 +34,11 @@ glm::vec3 PerfectSpecular::sample_ev(
 glm::vec3 PerfectTransimission::sample_ev(
   const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const {
   ray_i.o = itsc.itscVtx.position;
-  bool res = Refract(ray_o.d, itsc.itscVtx.normal, IOR, ray_i.d);
+  float cIOR = itsc.normalReverse?1.0f/IOR:IOR;
+  bool res = Refract(ray_o.d, itsc.itscVtx.normal, cIOR, ray_i.d);
   if(!res) return glm::vec3(0.0f);
-  // need handle asymetric
-  if(itsc.itscVtx.cosTheta(ray_o.d) < 0.0f)
-    return 1.0f/(IOR*IOR) * absorb->tex2D(itsc.itscVtx.uv);
-  else return (IOR*IOR) * absorb->tex2D(itsc.itscVtx.uv);
+
+  return (cIOR*cIOR) * absorb->tex2D(itsc.itscVtx.uv);
 }
 
 /************************GGX Utility********************************/

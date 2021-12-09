@@ -22,6 +22,7 @@ public:
   glm::vec3 itscError; // the error bound of the itsc point
   glm::vec3 geoNormal; // the real normal for the surface
   const Primitive* prim;
+  bool normalReverse = false;
 
   Intersection(): t(FLOAT_MAX), localUV(0), 
     itscError(0), prim(nullptr) {}
@@ -44,7 +45,14 @@ public:
     }
   }
 
+  inline void reverseNormal() {
+    geoNormal = -geoNormal;
+    itscVtx.normal = -itscVtx.normal; // TODO: do not reverse tangent?
+    normalReverse = true;
+  }
+
   // offset pos by error and the relation of normal and dir
+  // make sure that dir is on the same side with geoNormal
   inline void maxErrorOffset(glm::vec3 dir, glm::vec3& pos) const{
     float errord = glm::dot(itscError, glm::abs(geoNormal));
     errord = std::nextafter(errord, FLOAT_MAX); //+1 ulp

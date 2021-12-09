@@ -42,7 +42,7 @@ public:
 
   inline virtual int getType() const {return type;}
 
-  // NOTICE: every BxDF should consider outside surface and inside surface
+  // NOTICE: we always make sure 'dot(ray.d, normal)>0'
 
   // return brdf*|cos|, always not return black
   virtual glm::vec3 evaluate(
