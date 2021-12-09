@@ -67,7 +67,7 @@ glm::vec3 EnvironmentLight::evaluate(
 
   if(isSolid) return environment->tex2D({0,0});
   dir = -dir;
-  float theta = glm::acos(dir.y); // world up
+  float theta = glm::acos(glm::clamp(dir.y, -1.0f, 1.0f)); // world up
   float phi = std::atan2(dir.z, dir.x);
   if(phi < 0) phi += PI2;
   return environment->tex2D({phi*INV_PI2, theta*INV_PI});
@@ -108,11 +108,13 @@ float EnvironmentLight::getItscOnLight(Intersection& itsc, glm::vec3 evaP) const
 
 float EnvironmentLight::getItscPdf(const Intersection& itsc, const Ray& rayToLight) const{
   if(isSolid) return 1.0f/(PI4*sceneDiameter*sceneDiameter);
-  float theta = glm::acos(rayToLight.d.y); // world up
+  float theta = glm::acos(glm::clamp(rayToLight.d.y, -1.0f, 1.0f)); // world up
   float phi = std::atan2(rayToLight.d.z, rayToLight.d.x);
   if(phi < 0) phi += PI2;
   int x = phi*INV_PI2*dd2d.getCol();
   int y = theta*INV_PI*dd2d.getRow();
+  if(x >= dd2d.getCol()) x -= 1;
+  if(y >= dd2d.getCol()) y -= 1;
   float dux = 1.0f / dd2d.getCol()*PI2;
   float duy = 1.0f / dd2d.getRow()*PI;
   return dd2d.getPdf(x, y) / (dux*duy*sceneDiameter*sceneDiameter*glm::sin(theta));

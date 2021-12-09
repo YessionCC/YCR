@@ -41,10 +41,13 @@ public:
   void rotate(glm::vec3 axis, float angle);
   void addMesh(Mesh* mesh);
 
-  void setBxdfForAllMeshes(const BXDF* bxdf);
+  void setBxdfForAllMeshes(const BXDFNode* bxdfNode);
   void setLightForAllMeshes(const Light* light);
   void setMediumForAllMeshes(const Medium* medium, bool isInside = true);
   void setNormalMapForAllMeshes(const Texture* tex);
+
+  void setMaterialForAllMeshes(const Material& mat);  
+
   void setMeshPurposes(Mesh::MeshPurpose purpose);
 
   void toPointClouds(PCShower& pc, int tot_pcn, glm::vec3 col);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <iostream>
 
 #include "debug/pcshow.hpp"
 
@@ -11,6 +12,20 @@ public:
 
   inline void normalizeD() {d = glm::normalize(d);}
   inline glm::vec3 pass(float t) const {return o+t*d;}
+
+  inline bool checkDir() const {
+    if(d.x == 0.0f && d.y == 0.0f && d.z == 0.0f) {
+      std::cout<<"ERROR: Ray zero dir"<<std::endl;
+      return false;
+    }
+    if(std::isnan(d.x) || std::isinf(d.x) || 
+      std::isnan(d.y) || std::isinf(d.y) || 
+      std::isnan(d.z) || std::isinf(d.z)) {
+      std::cout<<"ERROR: Ray invalid dir"<<std::endl;
+      return false;
+    }
+    return true;
+  }
 
   // transform dir to x axis, make sure dir has normalized
   inline glm::mat3x3 getTransform() const{ 

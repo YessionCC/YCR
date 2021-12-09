@@ -11,10 +11,10 @@
 
 struct PathVertex {
   Intersection itsc;
-  const Medium* inMedium;
   glm::vec3 dir_o;
   glm::vec3 beta;
-  int bxdfType;
+  const Medium* inMedium;
+  const BXDF* bxdf;
 };
 
 class SubPathGenerator {
@@ -26,6 +26,7 @@ public:
     NoBXDF,
     RRFailed,
     TotalBlack,
+    CalcERROR,
     None
   };
 

@@ -42,6 +42,8 @@ public:
 
   inline virtual int getType() const {return type;}
 
+  // NOTICE: every BxDF should consider outside surface and inside surface
+
   // return brdf*|cos|, always not return black
   virtual glm::vec3 evaluate(
     const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const = 0;
@@ -79,14 +81,14 @@ public:
     const Intersection& itsc, const Ray& ray_i, const Ray& ray_o) const override;
 };
 
-/************************LambertianDiffuse******************************/
+/************************LambertianReflection******************************/
 
-class LambertianDiffuse: public BXDF {
+class LambertianReflection: public BXDF {
 private:
   const Texture* texture;
 
 public:
-  LambertianDiffuse(const Texture* tex): BXDF(BXDFNature::REFLECT), texture(tex) {}
+  LambertianReflection(const Texture* tex): BXDF(BXDFNature::REFLECT), texture(tex) {}
 
   glm::vec3 evaluate(
     const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const override;
@@ -94,6 +96,8 @@ public:
     const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const override;
   float sample_pdf(
     const Intersection& itsc, const Ray& ray_i, const Ray& ray_o) const override;
+
+  inline bool needMIS(const Intersection& itsc) const override {return false;}
 };
 
 /************************PerfectSpecular******************************/
@@ -170,22 +174,43 @@ public:
   }
 };
 
-/************************GGX******************************/
+/************************GGXReflection******************************/
 
-class GGX: public BXDF {
+class GGXReflection: public BXDF {
 private:
-  float eataI, eataT;
   const Texture *roughness, *albedo;
 
-  float roughnessToAlpha(float roughness) const ;
-  float normalDistribution(float normalTangent2, float alpha) const ;
-  void sampleNormal(float alpha, float& phi, float& tan2Theta) const ;
-  float maskShadow(float tan2Theta, float alpha) const ;
+public:
+  GGXReflection(const Texture* roughness, const Texture* albedo): 
+    BXDF(BXDFNature::REFLECT | BXDFNature::GLOSSY), 
+    roughness(roughness), albedo(albedo) {}
+
+  inline glm::vec3 evaluate(
+    const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const override;
+
+  glm::vec3 sample_ev(
+    const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const override;
+  
+  float sample_pdf(
+    const Intersection& itsc, const Ray& ray_i, const Ray& ray_o) const override;
+  
+  inline virtual bool needMIS(const Intersection& itsc) const {
+    //if(roughness->tex2D(itsc.itscVtx.uv).x < 0.1f)
+    return true;
+  }
+};
+
+/************************GGXTransimission******************************/
+
+class GGXTransimission: public BXDF {
+private:
+  float IOR;
+  const Texture *roughness, *albedo;
 
 public:
-  GGX(float eataI, float eataT, const Texture* roughness, const Texture* albedo): 
-    BXDF(BXDFNature::REFLECT | BXDFNature::GLOSSY), 
-    eataI(eataI), eataT(eataT), roughness(roughness), albedo(albedo) {}
+  GGXTransimission(float IOR, const Texture* roughness, const Texture* albedo): 
+    BXDF(BXDFNature::TRANSMISSION | BXDFNature::GLOSSY), 
+    IOR(IOR), roughness(roughness), albedo(albedo) {}
 
   inline glm::vec3 evaluate(
     const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const override;

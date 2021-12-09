@@ -87,22 +87,26 @@ bool Model::loadFromFile(const char* filename){
   return true;
 }
 
-void Model::setBxdfForAllMeshes(const BXDF* bxdf) {
-  for(Mesh* mesh: meshes) mesh->bxdf = bxdf;
+void Model::setBxdfForAllMeshes(const BXDFNode* bxdfNode) {
+  for(Mesh* mesh: meshes) mesh->material.bxdfNode = bxdfNode;
 }
 
 void Model::setLightForAllMeshes(const Light* light) {
-  for(Mesh* mesh: meshes) mesh->light = light;
+  for(Mesh* mesh: meshes) mesh->material.light = light;
 }
 
 // set Medeium(default inside medium)
 void Model::setMediumForAllMeshes(const Medium* medium, bool isInside) {
-  if(isInside) for(Mesh* mesh: meshes) mesh->mediumInside = medium;
-  else for(Mesh* mesh: meshes) mesh->mediumOutside = medium;
+  if(isInside) for(Mesh* mesh: meshes) mesh->material.mediumInside = medium;
+  else for(Mesh* mesh: meshes) mesh->material.mediumOutside = medium;
 }
 
 void Model::setNormalMapForAllMeshes(const Texture* tex) {
-  for(Mesh* mesh: meshes) mesh->normalMap = tex;
+  for(Mesh* mesh: meshes) mesh->material.normalMap = tex;
+}
+
+void Model::setMaterialForAllMeshes(const Material& mat) {
+  for(Mesh* mesh: meshes) mesh->material = mat;
 }
 
 void Model::setMeshPurposes(Mesh::MeshPurpose purpose) {

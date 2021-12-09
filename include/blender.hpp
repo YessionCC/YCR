@@ -4,6 +4,7 @@
 
 class Blender {
 public:
+  virtual ~Blender() {}
   virtual float getBlendVal(const Intersection& itsc, const Ray& ray_o) const = 0;
 };
 

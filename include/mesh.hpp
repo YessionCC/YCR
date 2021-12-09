@@ -1,12 +1,7 @@
 #pragma once
 
-#include "bxdf.hpp"
-#include "light.hpp"
 #include "material.hpp"
 #include <glm/glm.hpp>
-
-class Medium;
-class Texture;
 
 class Mesh {
 public:
@@ -22,15 +17,11 @@ protected:
   MeshType type;
 
 public:
-  const BXDF* bxdf = nullptr;
-  const Medium* mediumInside = nullptr;
-  const Medium* mediumOutside = nullptr;
-  const Light* light = nullptr; //if null, it is not emissive
-  const Texture* normalMap = nullptr;
+  Material material;
 
   MeshPurpose purpose = MeshPurpose::Normal;
 
-  virtual ~Mesh() {delete bxdf; delete light;} //
+  virtual ~Mesh() {} //
   Mesh(MeshType type): type(type) {}
 
   inline MeshType getType() const {return type;}

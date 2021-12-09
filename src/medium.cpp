@@ -11,8 +11,8 @@ Medium::Medium(float sigmaT, glm::vec3 sigmaS,
   CustomMesh* mesh = CustomMesh::CreatePoint(glm::vec3(0));
   particle = mesh->prims[0];
   particleMesh = mesh;
-  particleMesh->bxdf = phaseFunc;
-  particleMesh->mediumInside = this;
+  particleMesh->material.bxdfNode = phaseFunc;
+  particleMesh->material.mediumInside = this;
 }
 
 void Medium::addToScene(Scene& scene, bool noBXDF) {

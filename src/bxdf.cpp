@@ -1,13 +1,13 @@
 #include "bxdf.hpp"
 #include "sampler.hpp"
 
-glm::vec3 LambertianDiffuse::evaluate(
+glm::vec3 LambertianReflection::evaluate(
   const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const {
   float cosTheta = glm::max(0.0f, itsc.itscVtx.cosTheta(ray_i.d));
   return cosTheta * INV_PI*texture->tex2D(itsc.itscVtx.uv);
 }
 
-glm::vec3 LambertianDiffuse::sample_ev(
+glm::vec3 LambertianReflection::sample_ev(
   const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const {
   glm::vec2 dir_i = _ThreadSampler.uniSampleDisk();
   glm::vec3 tanp(
@@ -19,7 +19,7 @@ glm::vec3 LambertianDiffuse::sample_ev(
   return texture->tex2D(itsc.itscVtx.uv);
 }
 
-float LambertianDiffuse::sample_pdf(
+float LambertianReflection::sample_pdf(
   const Intersection& itsc, const Ray& ray_i, const Ray& ray_o) const {
   return INV_PI*glm::max(0.0f, itsc.itscVtx.cosTheta(ray_i.d));
 }
@@ -42,27 +42,29 @@ glm::vec3 PerfectTransimission::sample_ev(
   else return (IOR*IOR) * absorb->tex2D(itsc.itscVtx.uv);
 }
 
-float GGX::roughnessToAlpha(float roughness) const {
+/************************GGX Utility********************************/
+float roughnessToAlpha(float roughness) {
   roughness = std::max(roughness, 1e-3f);
   float x = std::log(roughness);
   return 1.62142f + 0.819955f * x + 0.1734f * x * x + 0.0171201f * x * x * x +
           0.000640711f * x * x * x * x;
 }
-float GGX::normalDistribution(float normalTangent2, float alpha) const {
+float normalDistribution(float normalTangent2, float alpha) {
   float normalCos2 = 1.0f/(1.0f+normalTangent2);
   float tmp = alpha*normalCos2*(1+normalTangent2/(alpha*alpha));
   return 1.0f / (PI*tmp*tmp);
 }
-void GGX::sampleNormal(float alpha, float& phi, float& tan2Theta) const {
+void sampleNormal(float alpha, float& phi, float& tan2Theta) {
   phi = PI2*_ThreadSampler.get1();
   float u2 = _ThreadSampler.get1();
   tan2Theta = u2*alpha*alpha/(1-u2);
 }
-float GGX::maskShadow(float tan2Theta, float alpha) const {
+float maskShadow(float tan2Theta, float alpha) {
   return 0.5f*(-1+glm::sqrt(1+alpha*alpha*tan2Theta));
 }
+/********************************************************/
 
-glm::vec3 GGX::evaluate(
+glm::vec3 GGXReflection::evaluate(
   const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const {
   float alpha = roughnessToAlpha(roughness->tex2D(itsc.itscVtx.uv).x);
   float tan2ThetaI = glm::max(0.0f, itsc.itscVtx.tan2Theta(ray_i.d));
@@ -71,10 +73,9 @@ glm::vec3 GGX::evaluate(
   glm::vec3 wh = glm::normalize(ray_i.d+ray_o.d);
   float tan2ThetaWh = glm::max(0.0f, itsc.itscVtx.tan2Theta(wh));
   float normalDistr = normalDistribution(tan2ThetaWh, alpha);
-  float fr = 1.0f;//FrDielectricReflect(ray_o.d, wh, eataI, eataT);
   float cosThetaO = itsc.itscVtx.cosTheta(ray_o.d);
   if(cosThetaO <= 0.0f) return glm::vec3(0.0f);
-  return normalDistr*G*fr/(4.0f*cosThetaO)*albedo->tex2D(itsc.itscVtx.uv);
+  return normalDistr*G/(4.0f*cosThetaO)*albedo->tex2D(itsc.itscVtx.uv);
 }
 
 // !!we sample D(wh), and must transform it to wi(pdf from half angle to solid angle)
@@ -82,7 +83,7 @@ glm::vec3 GGX::evaluate(
 // pdf(wo) = pdf(wh) / (4cos(wh, wi))
 // brdf*cos(wi)/pdf = D(wh)*G*Fr/(4cos(i,n)*cos(o,n)) * cos(i,n) /(D(wh)cos(wh,n)/4cos(wh, wi))
 // == G*Fr*cos(wh,i)/(cos(wh,n)*cos(o,n))
-glm::vec3 GGX::sample_ev(
+glm::vec3 GGXReflection::sample_ev(
   const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const {
   float phi, tan2Theta;
   float alpha = roughnessToAlpha(roughness->tex2D(itsc.itscVtx.uv).x);
@@ -95,24 +96,23 @@ glm::vec3 GGX::sample_ev(
     glm::sqrt(cos2Theta));
   glm::vec3 wh = itsc.toWorldSpace(tanp);
   glm::vec3 refl = Reflect(ray_o.d, wh);
-  // do not point inside surface, compare with geoNormal
-  if(itsc.cosTheta(refl) <= 0.0f) return glm::vec3(0.0f);
   ray_i.o = itsc.itscVtx.position;
   ray_i.d = refl;
+  // do not point inside surface, compare with geoNormal
+  if(itsc.cosTheta(refl) <= 0.0f) return glm::vec3(0.0f);
   float tan2ThetaI = glm::max(0.0f, itsc.itscVtx.tan2Theta(ray_i.d));
   float tan2ThetaO = glm::max(0.0f, itsc.itscVtx.tan2Theta(ray_o.d));
   float G = 1.0f/(1.0f+maskShadow(tan2ThetaI, alpha)+maskShadow(tan2ThetaO, alpha));
-  float fr = 1.0f;//FrDielectricReflect(ray_o.d, wh, eataI, eataT);
   float cosThetaO = itsc.itscVtx.cosTheta(ray_o.d);
   float cosWh = itsc.itscVtx.cosTheta(wh);
   float cosWhI = glm::max(0.0f, glm::dot(ray_i.d, wh));
   if(cosThetaO <= 0.0f) return glm::vec3(0.0f);
-  return G*fr*cosWhI/(cosThetaO*cosWh)*albedo->tex2D(itsc.itscVtx.uv); 
+  return G*cosWhI/(cosThetaO*cosWh)*albedo->tex2D(itsc.itscVtx.uv); 
 }
 
 // pdf(wh) = D(wh)*cos(wh)
 // pdf(wo) = pdf(wh) / (4cos(wh, wi))
-float GGX::sample_pdf(
+float GGXReflection::sample_pdf(
   const Intersection& itsc, const Ray& ray_i, const Ray& ray_o) const {
   float alpha = roughnessToAlpha(roughness->tex2D(itsc.itscVtx.uv).x);
   glm::vec3 wh = glm::normalize(ray_i.d+ray_o.d);

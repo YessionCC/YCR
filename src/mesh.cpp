@@ -16,11 +16,7 @@ Mesh* VertexMesh::copy() const {
 
   mesh->indices = indices;
 
-  mesh->light = light;
-  mesh->mediumInside = mediumInside;
-  mesh->mediumOutside = mediumOutside;
-  mesh->normalMap = normalMap;
-  mesh->bxdf = bxdf;
+  mesh->material = material;
 
   for(Vertex* v : vertices) 
     mesh->vertices.push_back(new Vertex(*v));
@@ -107,12 +103,8 @@ Mesh* CustomMesh::copy() const {
   mesh->type = type;
   mesh->purpose = purpose;
 
-  mesh->light = light;
-  mesh->mediumInside = mediumInside;
-  mesh->mediumOutside = mediumOutside;
-  mesh->normalMap = normalMap;
-  mesh->bxdf = bxdf;
-  
+  mesh->material = material;
+
   for(Primitive* prim: prims)
     mesh->prims.push_back(prim->copy(mesh));
   return mesh;

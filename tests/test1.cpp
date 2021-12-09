@@ -36,9 +36,9 @@ int main() {
     new ImageTexture("/home/yession/Code/Cpp/ycr/models/Cube/grid.jpeg");
   imgtex->setUVScale({5.0f, 5.0f});
   imgtex->setUVOffset({0.6f, 0.2f});
-  BXDF* bxdf2 = new LambertianDiffuse(imgtex);
+  BXDF* bxdf2 = new LambertianReflection(imgtex);
   BXDF* bxdf3 = new PerfectSpecular(new SolidTexture(glm::vec3(1.0f)));
-  BXDF* bxdf4 = new LambertianDiffuse(new SolidTexture(glm::vec3(1.0f)));
+  BXDF* bxdf4 = new LambertianReflection(new SolidTexture(glm::vec3(1.0f)));
   
   bkg.setBxdfForAllMeshes(bxdf4);
   lgt.setLightFoeAllMeshes(light);

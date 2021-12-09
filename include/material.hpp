@@ -1,11 +1,12 @@
 #pragma once 
-#include "itsc.hpp"
+
 #include "sampler.hpp"
 #include "blender.hpp"
 
 // Tree recursion with inheritance and polymorphism
 class BXDFNode {
 public:
+  virtual ~BXDFNode() {}
   // return weight, and also return the node
   virtual float getBXDF(
     const Intersection& itsc, const Ray& ray_o, const BXDFNode*& bxdfNode) const = 0;
@@ -14,9 +15,10 @@ public:
 class WeightedBXDF: public BXDFNode {
 private:
   const BXDFNode* bxdfNode; 
-  const Blender* blender;
+  const Blender* blender; // blender do not share
   
 public:
+  virtual ~WeightedBXDF() {delete blender;}
   WeightedBXDF(const BXDFNode* bxdfNode, const Blender* blender):
     bxdfNode(bxdfNode), blender(blender) {}
   
@@ -34,6 +36,7 @@ private:
   const Blender* blender;
   
 public:
+  virtual ~MixedBXDF() {delete blender;}
   MixedBXDF(const BXDFNode* bxdfNode1, const BXDFNode* bxdfNode2, const Blender* blender):
     bxdfNode1(bxdfNode1), bxdfNode2(bxdfNode2), blender(blender) {}
 
@@ -46,12 +49,23 @@ public:
   }
 };
 
-// class Material {
-// public:
-//   const BXDFNode* bxdfNode = nullptr;
-//   const Medium* mediumInside = nullptr;
-//   const Medium* mediumOutside = nullptr;
-//   const Light* light = nullptr; //if null, it is not emissive
-//   const Texture* normalMap = nullptr;
+class Medium;
+class Light;
+class Texture;
+class BXDF;
 
-// };
+class Material {
+public:
+  const BXDFNode* bxdfNode = nullptr;
+  const Medium* mediumInside = nullptr;
+  const Medium* mediumOutside = nullptr;
+  const Light* light = nullptr; //if null, it is not emissive
+  const Texture* normalMap = nullptr;
+
+public:
+  float getBXDF(
+    const Intersection& itsc, const Ray& ray_o, const BXDF*& bxdfNode) const;
+
+  void bumpMapping(Intersection& itsc) const;
+
+};
