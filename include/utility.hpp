@@ -38,6 +38,7 @@ inline float PwToPa(float pdf, float dist2, float cosTheta) {
 
 // pdf1**2 / (pdf1**2+pdf2**2)
 inline float PowerHeuristicWeight(float pdf1, float pdf2) {
+  if(pdf1 <= 0.0f) return 0.0f;
   return 1.0f/(1.0f+(pdf2/pdf1)*(pdf2/pdf1));
 }
 

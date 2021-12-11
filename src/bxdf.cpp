@@ -105,7 +105,7 @@ glm::vec3 GGXReflection::sample_ev(
   float cosThetaO = itsc.itscVtx.cosTheta(ray_o.d);
   float cosWh = itsc.itscVtx.cosTheta(wh);
   float cosWhI = glm::max(0.0f, glm::dot(ray_i.d, wh));
-  if(cosThetaO <= 0.0f) return glm::vec3(0.0f);
+  if(cosThetaO <= 0.0f || cosWh <= 0.0f) return glm::vec3(0.0f);
   return G*cosWhI/(cosThetaO*cosWh)*albedo->tex2D(itsc.itscVtx.uv); 
 }
 
@@ -118,8 +118,78 @@ float GGXReflection::sample_pdf(
   float tan2ThetaWh = glm::max(0.0f, itsc.itscVtx.tan2Theta(wh));
   float normalDistr = normalDistribution(tan2ThetaWh, alpha);
   float cosWh = itsc.itscVtx.cosTheta(wh);
-  float cosWhI = glm::max(0.0f, glm::dot(ray_i.d, wh));
+  float cosWhI = glm::dot(ray_i.d, wh);
+  if(cosWhI <= 0.0f) return 0.0f;
   return normalDistr*cosWh/(4.0f*cosWhI);
+}
+
+glm::vec3 GGXTransimission::evaluate(
+  const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const {
+  float alpha = roughnessToAlpha(roughness->tex2D(itsc.itscVtx.uv).x);
+  float tan2ThetaI = glm::max(0.0f, itsc.itscVtx.tan2Theta(ray_i.d));
+  float tan2ThetaO = glm::max(0.0f, itsc.itscVtx.tan2Theta(ray_o.d));
+  float G = 1.0f/(1.0f+maskShadow(tan2ThetaI, alpha)+maskShadow(tan2ThetaO, alpha));
+  float cIOR = itsc.normalReverse?1.0f/IOR:IOR;
+  glm::vec3 wh = glm::normalize(ray_i.d*cIOR+ray_o.d);
+  float tan2ThetaWh = glm::max(0.0f, itsc.itscVtx.tan2Theta(wh));
+  float normalDistr = normalDistribution(tan2ThetaWh, alpha);
+  float cosThetaO = itsc.itscVtx.cosTheta(ray_o.d);
+  if(cosThetaO <= 0.0f) return glm::vec3(0.0f);
+  float cosWoWh = glm::dot(ray_o.d, wh);
+  float cosWiWh = glm::dot(ray_i.d, wh);
+  float tmp = cIOR*cosWiWh+cosWoWh;
+  if(tmp == 0.0f) return glm::vec3(0.0f);
+  float dwhdwo = cosWiWh*cosWoWh/(cosThetaO*tmp*tmp);
+  return cIOR*cIOR*normalDistr*G*glm::abs(dwhdwo)*albedo->tex2D(itsc.itscVtx.uv);
+}
+
+glm::vec3 GGXTransimission::sample_ev(
+  const Intersection& itsc, const Ray& ray_o, Ray& ray_i) const {
+  float phi, tan2Theta;
+  float alpha = roughnessToAlpha(roughness->tex2D(itsc.itscVtx.uv).x);
+  sampleNormal(alpha, phi, tan2Theta);
+  float cos2Theta = 1.0f/(1.0f+tan2Theta);
+  float sinTheta = glm::sqrt(glm::max(0.0f, 1.0f - cos2Theta));
+  glm::vec3 tanp(
+    sinTheta*glm::cos(phi), 
+    sinTheta*glm::sin(phi),
+    glm::sqrt(cos2Theta));
+  glm::vec3 wh = itsc.toWorldSpace(tanp);
+  float cIOR = itsc.normalReverse?1.0f/IOR:IOR;
+  glm::vec3 refr; 
+  if(!Refract(ray_o.d, wh, cIOR, refr)) return glm::vec3(0.0f);
+  ray_i.o = itsc.itscVtx.position;
+  ray_i.d = refr;
+  glm::vec3 test = glm::normalize(ray_o.d+ray_i.d*cIOR); //
+  float cosWhO = glm::dot(wh, ray_o.d);
+  float cosWhII = glm::dot(wh, ray_i.d);
+  // do not point outside surface, compare with geoNormal
+  if(itsc.cosTheta(refr) > 0.0f) return glm::vec3(0.0f);
+  float tan2ThetaI = glm::max(0.0f, itsc.itscVtx.tan2Theta(ray_i.d));
+  float tan2ThetaO = glm::max(0.0f, itsc.itscVtx.tan2Theta(ray_o.d));
+  float G = 1.0f/(1.0f+maskShadow(tan2ThetaI, alpha)+maskShadow(tan2ThetaO, alpha));
+  float cosThetaO = itsc.itscVtx.cosTheta(ray_o.d);
+  float cosWh = itsc.itscVtx.cosTheta(wh);
+  float cosWhI = glm::abs(glm::dot(ray_i.d, wh));
+  if(cosThetaO <= 0.0f || cosWh <= 0.0f) return glm::vec3(0.0f);
+  return G*cosWhI/(cosThetaO*cosWh)*albedo->tex2D(itsc.itscVtx.uv); 
+}
+
+// pdf(wh) = D(wh)*cos(wh)
+// pdf(wo) = pdf(wh) / (4cos(wh, wi))
+float GGXTransimission::sample_pdf(
+  const Intersection& itsc, const Ray& ray_i, const Ray& ray_o) const {
+  float alpha = roughnessToAlpha(roughness->tex2D(itsc.itscVtx.uv).x);
+  float cIOR = itsc.normalReverse?1.0f/IOR:IOR;
+  glm::vec3 wh = glm::normalize(ray_i.d*cIOR+ray_o.d);
+  float tan2ThetaWh = glm::max(0.0f, itsc.itscVtx.tan2Theta(wh));
+  float normalDistr = normalDistribution(tan2ThetaWh, alpha);
+  float cosWh = itsc.itscVtx.cosTheta(wh);
+  float cosWhI = glm::dot(ray_i.d, wh);
+  float cosWhO = glm::dot(ray_o.d, wh);
+  float tmp = cIOR*cosWhI+cosWhO;
+  if(tmp == 0.0f) return 0.0f;
+  return cIOR*cIOR* normalDistr*glm::abs(cosWh*cosWhO)/(tmp*tmp);//
 }
 
 inline float HenyeyPhase::samplePhaseCosTheta() const { //

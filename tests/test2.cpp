@@ -30,6 +30,7 @@ int main() {
   glm::vec3 vtxs3[3] = {{0,0,0}, {0,100,0}, {0,0,100}};
   glm::vec3 vtxs4[3] = {{0,0,0}, {0,0,100}, {100,0,0}};
   glm::vec3 vtxs5[4] = {{0,0,0}, {0,0,100}, {100,0,100}, {100, 0, 0}};
+  glm::vec3 vtxs6[4] = {{0,0,0}, {5,0,2}, {0,5,0}};
 
   Model nano("/home/yession/Code/Cpp/ycr/models/Nanosuit/nanosuit.obj");
   Model deer("/home/yession/Code/Cpp/ycr/models/Deer/deer.obj");
@@ -38,6 +39,7 @@ int main() {
   Model sphere3(CustomMesh::CreateSphere(glm::vec3(-4, -4, 1.2f), 1.0f));
   Model bkg(VertexMesh::CreateTriangle(vtxs2));
   Model bkg2(VertexMesh::CreateRectangle(vtxs5));
+  Model mGlass(VertexMesh::CreateTriangle(vtxs6));
   bkg.addMesh(VertexMesh::CreateTriangle(vtxs3));
   bkg.addMesh(VertexMesh::CreateTriangle(vtxs4));
 
@@ -70,7 +72,7 @@ int main() {
   BXDF* bxdf4 = new LambertianReflection(new SolidTexture(glm::vec3(1.0f)));
   BXDF* bxdf6 = new GGXReflection(new SolidTexture(0.002f), new SolidTexture(1.0f));
   BXDF* bxdf7 = new GGXReflection(new SolidTexture(0.02f), new SolidTexture(1.0f));
-  BXDF* bxdf9 = new GGXReflection(new SolidTexture(0.002f), imgtex2);
+  BXDF* bxdf9 = new GGXTransimission(1.4f, new SolidTexture(0.01f), new SolidTexture(1.0f));
   BXDFNode* bxdf8 = new SpecularCeramics(1.4f, new SolidTexture(1.0f));
 
   BXDFNode* bxdfc = new MixedBXDF(bxdf4, 
@@ -78,11 +80,12 @@ int main() {
   
   bkg.setBxdfForAllMeshes(bxdf4);
   bkg2.setBxdfForAllMeshes(bxdf6);//
-  sphere.setBxdfForAllMeshes(bxdf6);
+  sphere.setBxdfForAllMeshes(bxdf9);
+  mGlass.setBxdfForAllMeshes(bxdf9);
   //sphere.setNormalMapForAllMeshes(blockNormal);
   //sphere3.setBxdfForAllMeshes(bxdf3);
   cube.setBxdfForAllMeshes(bxdf5);
-  nano.setBxdfForAllMeshes(bxdf7);
+  nano.setBxdfForAllMeshes(bxdf);
   deer.setBxdfForAllMeshes(bxdf7);
   deer.scale(glm::vec3(1e-2f));
   deer.translate({0, -8, -5});
@@ -102,6 +105,7 @@ int main() {
   sphere3.rotate({0, 0, 1}, 45);
   sphere3.translate({-4,0,5});
   // sphere3.translate({-2,18,-1});
+  mGlass.translate({-3, -3, 5});
 
   Model sphere2 = sphere;
   sphere2.setBxdfForAllMeshes(bxdf);
@@ -134,13 +138,14 @@ int main() {
   scene.addModel(sphere2);
   //scene.addModel(sphere3);
   scene.addModel(cube);
+  //scene.addModel(mGlass);
   //scene.addModel(deer);
   scene.addMedium(medium, true);
   // scene.addModel(cube2);
 
   scene.init();
 
-  deer.toPointClouds(pc, 1e4, glm::vec3(1.0f));
+  //deer.toPointClouds(pc, 1e4, glm::vec3(1.0f));
   //bkg.toPointClouds(pc, 3e4, glm::vec3(0.4, 0.6, 0.1));
   bkg2.toPointClouds(pc, 3e4, glm::vec3(0.4, 0.6, 0.1));
   //lgt.toPointClouds(pc, 1e4, glm::vec3(1, 0, 0));
@@ -148,7 +153,8 @@ int main() {
   //sphere.toPointClouds(pc, 1e4, glm::vec3(1));
   //sphere2.toPointClouds(pc, 1e4, glm::vec3(1));
   //sphere3.toPointClouds(pc, 1e4, glm::vec3(1));
-  //cube.toPointClouds(pc, 1e4, glm::vec3(1.0f));
+  cube.toPointClouds(pc, 1e4, glm::vec3(1.0f));
+  //mGlass.toPointClouds(pc, 1e4, glm::vec3(1.0f));
   //cube2.toPointClouds(pc, 1e4, glm::vec3(1.0f));
 
   cam.visualizePointCloud(pc, 18, 40);

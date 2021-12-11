@@ -24,6 +24,8 @@ public:
   const Primitive* prim;
 
   // shows the itsc is in the inside or outside surface
+  // we always promiss dot(ray_o.d, geoNormal)>0, but do not promiss 
+  // shading normal satisfy it
   bool normalReverse = false;
 
   Intersection(): t(FLOAT_MAX), localUV(0), 

@@ -44,14 +44,10 @@ public:
   DielectricFresnelBlender(float IOR): IOR(IOR) {}
   // return reflection proportion
   float getBlendVal(const Intersection& itsc, const Ray& ray_o) const override {
-    float idt = 1.0f / IOR;
-    float cosThetaI = glm::dot(ray_o.d, itsc.itscVtx.normal);
-    if(cosThetaI < 0) {
-      idt = IOR;
-      cosThetaI = -cosThetaI;
-    }
-    float sinThetaI = glm::sqrt(1 - glm::min(1.0f, cosThetaI*cosThetaI));
-    float sinThetaT = idt*sinThetaI;
+    float cIOR = itsc.normalReverse? IOR: 1.0f/IOR;
+    float cosThetaI = glm::clamp(glm::dot(ray_o.d, itsc.itscVtx.normal), 0.0f, 1.0f);
+    float sinThetaI = glm::sqrt(1 - cosThetaI*cosThetaI);
+    float sinThetaT = cIOR*sinThetaI;
     if(sinThetaT>1.0f) return 1.0f; // total reflection
     else {
       float cosThetaT = glm::sqrt(1-glm::min(1.0f, sinThetaT*sinThetaT));

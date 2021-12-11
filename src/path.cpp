@@ -63,7 +63,9 @@ int SubPathGenerator::createSubPath(
     pvtx.dir_o = ray.d;
     pvtx.beta = beta; // set dir_o and beta before update
     pvtx.bxdf = bxdf;
-    pvtx.inMedium = inMedium;
+    // for particles, mediumOutside = medium
+    // for surface, for direct light evaluate only use outside medium
+    pvtx.inMedium = mat.mediumOutside;
 
     beta *= bxdfWeight * bxdf->sample_ev(itsc, ray, sampleRay);
     ray = sampleRay;//
@@ -206,7 +208,7 @@ void PathIntegrator::render(const Scene& scene, SubPathGenerator& subpathGen,
   auto& pathVtxs = subpathGen.getPathVtxs();
 
   while(rayGen.genNextRay(ray, rasPos)) {
-    // if((int)rasPos.x == 563 && (int)rasPos.y == 297) {
+    // if((int)rasPos.x == 255 && (int)rasPos.y == 228) {
     //   int a = 0;
     // }
 
