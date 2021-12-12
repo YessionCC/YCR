@@ -5,6 +5,7 @@
 #include "light.hpp"
 #include "texture.hpp"
 #include "bxdf.hpp"
+#include "bxdfc.hpp"
 
 float Material::getBXDF(
   const Intersection& itsc, const Ray& ray_o, const BXDF*& bxdfNode) const {
@@ -24,4 +25,17 @@ void Material::bumpMapping(Intersection& itsc) const {
   itsc.itscVtx.btangent = glm::normalize(glm::cross(itsc.itscVtx.tangent, normal));
   itsc.itscVtx.tangent = glm::cross(normal, itsc.itscVtx.btangent);
   itsc.itscVtx.normal = normal;
+}
+
+void Material::handleMaterialInfo(const MaterialInfo& minfo) {
+  if(minfo.normal.size()) this->normalMap = minfo.normal[0];
+  // if(minfo.lightMap.size()) this->light = minfo.lightMap[0];
+  if(!minfo.specular.size()) this->bxdfNode = new LambertianReflection(minfo.diffuse[0]);
+  else if(!minfo.glossy.size()) 
+    this->bxdfNode = new PrincipleBSDF1(minfo.diffuse[0], minfo.specular[0]);
+  else if(!minfo.opacity.size()) 
+    this->bxdfNode = new PrincipleBSDF1(
+      minfo.diffuse[0], minfo.specular[0], minfo.glossy[0]);
+  else this->bxdfNode = new PrincipleBSDF1(
+    minfo.diffuse[0], minfo.specular[0], minfo.glossy[0], minfo.opacity[0], minfo.IOR);
 }

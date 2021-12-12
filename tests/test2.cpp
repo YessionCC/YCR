@@ -16,12 +16,12 @@
 PCShower pc;
 Scene scene;
 Film film(800, 800, 60);
-Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
-//Camera cam(film, {0, 6, 14}, {0, -0.4f, -1});
+//Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
+Camera cam(film, {0, 6, 14}, {0, -0.45f, -1});
 //Camera cam(film, {0, 14, 35}, {0, -0.4f, -1});
 //Camera cam(film, {0, 14, 50}, {0, -0.4f, -1});
 RenderProcShower rShower(film);
-ParallelRenderer pRenderer(scene, cam, film, 1024, 12);
+ParallelRenderer pRenderer(scene, cam, film, 4096, 12);
 
 int main() {
   glm::vec3 vtxsl[3] = {{-8,6,0}, {-8,7,0}, {-8,6,1}};
@@ -48,7 +48,7 @@ int main() {
 
   EnvironmentLight* envLight = 
     new EnvironmentLight(
-      new ImageTexture("/home/yession/Code/Cpp/ycr/models/Cube/polar.jpg"));
+      new ImageTexture("/home/yession/Code/Cpp/ycr/models/Cube/polar.jpg", 2.0f));
   EnvironmentLight* envLight2 = 
     new EnvironmentLight(
       new SolidTexture(1.0f));
@@ -68,10 +68,10 @@ int main() {
     new ImageTexture("/home/yession/Code/Cpp/ycr/models/Cube/rough.jpeg");
   BXDF* bxdf2 = new LambertianReflection(imgtex);
   BXDF* bxdf5 = new LambertianReflection(imgtex2);
-  BXDF* bxdf3 = new PerfectSpecular(new SolidTexture(glm::vec3(1.0f)));
+  BXDF* bxdf3 = new PerfectSpecular(new SolidTexture(glm::vec3(1.0, 0.4, 0.3)));
   BXDF* bxdf4 = new LambertianReflection(new SolidTexture(glm::vec3(1.0f)));
   BXDF* bxdf6 = new GGXReflection(new SolidTexture(0.002f), new SolidTexture(1.0f));
-  BXDF* bxdf7 = new GGXReflection(new SolidTexture(0.02f), new SolidTexture(1.0f));
+  BXDF* bxdf7 = new GGXReflection(new SolidTexture(0.002f), imgtex);
   BXDF* bxdf9 = new GGXTransimission(1.4f, new SolidTexture(0.01f), new SolidTexture(1.0f));
   BXDFNode* bxdf8 = new SpecularCeramics(1.4f, new SolidTexture(1.0f));
 
@@ -79,21 +79,23 @@ int main() {
     new PerfectTransimission(new SolidTexture(1.0f), 1.4f), new FixBlender(0.5f));
   
   bkg.setBxdfForAllMeshes(bxdf4);
-  bkg2.setBxdfForAllMeshes(bxdf6);//
+  bkg2.setBxdfForAllMeshes(bxdf7);//
   sphere.setBxdfForAllMeshes(bxdf9);
   mGlass.setBxdfForAllMeshes(bxdf9);
   //sphere.setNormalMapForAllMeshes(blockNormal);
   //sphere3.setBxdfForAllMeshes(bxdf3);
-  cube.setBxdfForAllMeshes(bxdf5);
-  nano.setBxdfForAllMeshes(bxdf);
+  cube.setBxdfForAllMeshes(bxdf3);
+  //nano.setBxdfForAllMeshes(bxdf);
   deer.setBxdfForAllMeshes(bxdf7);
   deer.scale(glm::vec3(1e-2f));
   deer.translate({0, -8, -5});
   cube.rotate({0,1,0}, 30);
   cube.scale({5,5,5});
   cube.translate({-2, -4, -6});
+  cube.translate({-3,0,-2});
   //sphere.rotate({0,0,0}, 20);
   nano.translate({0, -7.5, 0});
+  nano.translate({2, 0, -5});
   bkg.translate({-10, -7.5, -10});
   bkg2.rotate({0,1,0}, 45);
   bkg2.translate({-70, -7.5, 0});
@@ -126,8 +128,8 @@ int main() {
     sT, sigmaS, &sphere3, new HenyeyPhase(0.5, sigmaS));
 
   //scene.addGlobalMedium(medium);
-  //scene.addModel(nano);
-  //scene.addLight(light);
+  scene.addModel(nano);
+  scene.addLight(light);
   //scene.addLight(light3);
   //scene.addLight(light4);
   scene.addLight(envLight);
@@ -140,7 +142,7 @@ int main() {
   scene.addModel(cube);
   //scene.addModel(mGlass);
   //scene.addModel(deer);
-  scene.addMedium(medium, true);
+  //scene.addMedium(medium, true);
   // scene.addModel(cube2);
 
   scene.init();

@@ -4,10 +4,6 @@
 #include <vector>
 #include <ctype.h>
 
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
 #include "vertex.hpp"
 #include "primitive.hpp"
 #include "bxdf.hpp"
@@ -21,9 +17,6 @@ private:
   std::string modelDirectory;
   std::vector<Mesh*> meshes;
 
-  void processNode(aiNode *node, const aiScene *scene);
-  Mesh* processMesh(aiMesh *mesh, const aiScene *scene);
-
 public:
   ~Model();
   Model() {}
@@ -34,7 +27,6 @@ public:
   const Model& operator=(const Model& model) = delete;
 
   Model* copy();
-  bool loadFromFile(const char* filename);
   void toPrimitives(std::vector<const Primitive*>& vp) const;
   void translate(glm::vec3 translate);
   void scale(glm::vec3 scale);

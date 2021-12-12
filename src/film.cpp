@@ -55,19 +55,13 @@ void Film::addSplat(glm::vec3 L, glm::vec2 center) {
   }
 }
 
-void Film::generateImage(const char* filename) const {
-  glm::vec3 pix;
+void Film::generateImage(const char* filename, float exposure) const {
+  glm::vec3 pix(0.0f);
   unsigned char* output = new unsigned char[totPix*3];
   for(int i=0; i<totPix; i++) {
-    // debug error detect
-    if(pWeights[i]<0.5f && pixels[i].x+pixels[i].y+pixels[i].z > 1e-6){
-      std::cout<<"detect weight error"<<std::endl;
-    }
-    
-    if(pWeights[i] > 0.0f) {
-      pix = pixels[i]/pWeights[i];
-    }
-    pix = 255.0f*glm::clamp(pix, 0.0f, 1.0f);
+    if(pWeights[i] > 0.0f) pix = pixels[i] / pWeights[i];
+    else pix = glm::vec3(0.0f);
+    pix = 255.0f*(1.0f - glm::exp(-exposure*pix));
     output[i*3] = (unsigned char)(pix.x);
     output[i*3+1] = (unsigned char)(pix.y);
     output[i*3+2] = (unsigned char)(pix.z);
@@ -76,13 +70,12 @@ void Film::generateImage(const char* filename) const {
   delete output;
 }
 
-void Film::generateImage(unsigned char* imgMat) const {
+void Film::generateImage(unsigned char* imgMat, float exposure) const {
   glm::vec3 pix;
   for(int i=0; i<totPix; i++) {
-    if(pWeights[i] > 0.0f) {
-      pix = pixels[i]/pWeights[i];
-    }
-    pix = 255.0f*glm::clamp(pix, 0.0f, 1.0f);
+    if(pWeights[i] > 0.0f) pix = pixels[i] / pWeights[i];
+    else pix = glm::vec3(0.0f);
+    pix = 255.0f*(1.0f - glm::exp(-exposure*pix));
     imgMat[i*3] = (unsigned char)(pix.x);
     imgMat[i*3+1] = (unsigned char)(pix.y);
     imgMat[i*3+2] = (unsigned char)(pix.z);

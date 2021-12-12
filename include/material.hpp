@@ -3,6 +3,8 @@
 #include "sampler.hpp"
 #include "blender.hpp"
 
+#include <vector>
+
 // Tree recursion with inheritance and polymorphism
 class BXDFNode {
 public:
@@ -54,6 +56,20 @@ class Light;
 class Texture;
 class BXDF;
 
+struct MaterialInfo {
+  float IOR = 1.0f;
+  std::vector<const Texture*>
+   diffuse, specular, normal, glossy, opacity, lightMap;
+
+  void printBriefInfo() const {
+    std::cout<<"IOR: "<<IOR<<std::endl;
+    #define pSize(c) std::cout<<#c<<": "<<c.size()<<std::endl
+    pSize(diffuse); pSize(specular); pSize(normal);
+    pSize(glossy); pSize(opacity); pSize(lightMap);
+    #undef pSize
+  }
+};
+
 class Material {
 public:
   const BXDFNode* bxdfNode = nullptr;
@@ -67,5 +83,7 @@ public:
     const Intersection& itsc, const Ray& ray_o, const BXDF*& bxdfNode) const;
 
   void bumpMapping(Intersection& itsc) const;
+
+  void handleMaterialInfo(const MaterialInfo& minfo);
 
 };
