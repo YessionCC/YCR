@@ -5,4 +5,4 @@ gpu/
 img/
 lib/
 models/
-*.ply
+/*.ply
