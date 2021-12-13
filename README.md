@@ -43,3 +43,11 @@ The program is compiled under Ubuntu 18.04， GCC， C++11
 - Render hair (based on Bezier curve)
 
 ## Some Results
+- 1024 spp, 205s
+![Ball](/present/ball.jpg "Ball")
+
+- 1024 spp, 4min
+![Fog](/present/fog.jpg "Fog")
+
+- 4096 spp, 25min
+![Nano](/present/nano.jpg "Nano")
