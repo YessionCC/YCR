@@ -26,6 +26,7 @@ void Scene::addLight(Light* light) {
 
 void Scene::addMedium(Medium* medium, bool noBXDF) {
   medium->addToScene(*this, noBXDF);
+  this->hasMedium = true;
 }
 
 // global medium must add before all model

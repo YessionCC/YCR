@@ -47,6 +47,8 @@ public:
 
   inline void resetSeed(int seed) {eng.seed(seed);}
 
+  inline glm::vec3 get3() {return {urd(eng), urd(eng), urd(eng)};}
+
   inline glm::vec2 get2() {return {urd(eng), urd(eng)};}
 
   inline float get1() {return urd(eng);}
@@ -63,6 +65,10 @@ public:
   // return cosTheta, phi
   inline glm::vec2 uniSampleSphere() {
     return {1.0f - 2.0f*urd(eng), PI2*urd(eng)};
+  }
+  // return cosTheta, phi
+  inline glm::vec2 uniSampleHemiSphere() {
+    return {1.0f - urd(eng), PI2*urd(eng)};
   }
 
   // return uv

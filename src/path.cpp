@@ -2,6 +2,9 @@
 #include "bxdf.hpp"
 #include "debug/analyse.hpp"
 
+SubPathGenerator::TransportMode SubPathGenerator::transportMode = 
+  SubPathGenerator::TransportMode::FromCamera;
+
 int SubPathGenerator::createSubPath(
   const Ray& start_ray, const Scene& scene, 
   int max_bounce) {
@@ -12,6 +15,7 @@ int SubPathGenerator::createSubPath(
   glm::vec3 beta(1.0f);
   const Medium* inMedium = scene.getGlobalMedium();
   const BXDF* bxdf; float bxdfWeight;
+  bool hasMedium = scene.hasMediumInScene();
   
   for(int bounce=0; bounce<max_bounce; bounce++) {
 
@@ -29,9 +33,15 @@ int SubPathGenerator::createSubPath(
       beta *= inMedium->sampleNextItsc(ray, itsc);
 
     if(!itsc.prim) {
-      if(scene.envLight &&  // handle infinite far envLight
-        (bounce == 0 || _HasFeature(pathVertices[bounce-1].bxdf->getType(), DELTA))) {
-        diracRadiance = scene.envLight->evaluate(itsc, -ray.d)*beta;
+      // handle infinite far envLight
+      if(scene.envLight && transportMode==TransportMode::FromCamera) {
+        if(bounce == 0 || _HasFeature(pathVertices[bounce-1].bxdf->getType(), DELTA))
+          diracRadiance = scene.envLight->evaluate(itsc, -ray.d)*beta;
+        lastVertex.beta = beta; // record envlight
+        lastVertex.dir_o = -ray.d;
+        lastVertex.lt = scene.envLight;
+        scene.envLight->genRayItsc(itsc, ray, ray.o);
+        lastVertex.itsc = itsc;
       }
       tstate = TerminateState::NoItsc; 
       return bounce;
@@ -41,9 +51,15 @@ int SubPathGenerator::createSubPath(
     if(itsc.cosTheta(ray.d)>0.0f) itsc.reverseNormal();
 
     if(mat.light) { // handle first/specular to shape light
-      if(!itsc.normalReverse &&
-        (bounce == 0 || _HasFeature(pathVertices[bounce-1].bxdf->getType(), DELTA))) {
-        diracRadiance += mat.light->evaluate(itsc, -ray.d)*beta ;
+      if(!itsc.normalReverse && transportMode==TransportMode::FromCamera) {
+        if(bounce == 0 || _HasFeature(pathVertices[bounce-1].bxdf->getType(), DELTA))
+          diracRadiance += mat.light->evaluate(itsc, -ray.d)*beta;
+        if(!mat.bxdfNode) { // record nobxdf light
+          lastVertex.beta = beta;
+          lastVertex.dir_o = -ray.d;
+          lastVertex.lt = mat.light;
+          lastVertex.itsc = itsc;
+        }
       } 
       if(!mat.bxdfNode) { // we allow no bxdf light
         tstate = TerminateState::ItscLight;
@@ -82,7 +98,7 @@ int SubPathGenerator::createSubPath(
     pathVertices.push_back(pvtx);
 
     // if is medium particle, it always in medium
-    if(_IsType(bxdf->getType(), NoSurface)) continue;
+    if(_IsType(bxdf->getType(), NoSurface) || !hasMedium) continue;
     inMedium = itsc.isRayToInside(ray)? mat.mediumInside:mat.mediumOutside;
     
   }
@@ -130,10 +146,12 @@ void PathIntegrator::estimateDirectLightByLi(
   rayToLight.o = pvtx.itsc.itscVtx.position;
   rayToLight.d = dirToLight;
 
-  //if(scene.occlude(rayToLight, len, litsc.prim)) return; 
-  if(scene.occlude(rayToLight, len, tr, pvtx.inMedium, litsc.prim)) 
-    return; 
-  //if(scene.occlude(pvtx.itsc, litsc, rayToLight, len)) return; 
+  if(scene.hasMediumInScene()) {
+    if(scene.occlude(rayToLight, len, tr, pvtx.inMedium, litsc.prim)) return; 
+  }
+  else { // if there are no medium, we can run more effectively
+    if(scene.occlude(rayToLight, len, litsc.prim)) return; 
+  }
 
   float invdis2 = 1.0f/(len*len);
   glm::vec3 leCosDivR2 = 
@@ -154,7 +172,7 @@ void PathIntegrator::estimateDirectLightByLi(
 }
 
 /**************************EstimateDirectLightByBSDF*****************************/
-
+// has medium
 void PathIntegrator::estimateDirectLightByBSDF(
   const Scene& scene, const DiscreteDistribution1D& ldd1d,
   PathVertex& pvtx, glm::vec3& L, bool needMIS) const {
@@ -170,7 +188,7 @@ void PathIntegrator::estimateDirectLightByBSDF(
 
   Intersection itsc = scene.intersectDirectly(rayToLight, pvtx.inMedium, tr);
 
-  const Light* lt = nullptr; float cosTheta = 1.0f;
+  const Light* lt = nullptr; 
   if(itsc.prim) {
     lt = itsc.prim->getMesh()->material.light;
     if(lt) {
@@ -193,6 +211,42 @@ void PathIntegrator::estimateDirectLightByBSDF(
     float lpdf_A = scene.getLightPdf(ldd1d, lt)*lt->getItscPdf(itsc, rayToLight);
     glm::vec3 dir = itsc.itscVtx.position - pvtx.itsc.itscVtx.position;
     float dist2 = dir.x*dir.x+dir.y*dir.y+dir.z*dir.z;
+    float cosTheta = itsc.itscVtx.cosTheta(-rayToLight.d);
+    float lpdf_S = PaToPw(lpdf_A, dist2, cosTheta); // from area to solid angle;
+    L *= PowerHeuristicWeight(bxdfPdf, lpdf_S);
+  }
+}
+// no medium, so we can reuse samples
+void PathIntegrator::estimateDirectLightByBSDF(
+    const Scene& scene, const DiscreteDistribution1D& ldd1d,
+    PathVertex* pvtx1, PathVertex* pvtx2, const LastVertex* lstvtx,
+    glm::vec3& L, bool needMIS) const{
+  L = glm::vec3(0.0f);
+  const Light* lt;
+  Intersection itsc;
+  Ray rayi, rayo;
+  if(!lstvtx) {
+    lt = pvtx2->itsc.prim->getMesh()->material.light;
+    if(!lt || pvtx2->itsc.normalReverse) return;
+    L = pvtx2->beta * lt->evaluate(pvtx2->itsc, pvtx2->dir_o);
+    rayi.d = -pvtx2->dir_o;
+    itsc = pvtx2->itsc;
+  }
+  else {
+    lt = lstvtx->lt;
+    if(!lt) return;
+    L = lstvtx->beta * lt->evaluate(lstvtx->itsc, lstvtx->dir_o); 
+    rayi.d = -lstvtx->dir_o;
+    itsc = lstvtx->itsc;
+  }
+  rayo.d = pvtx1->dir_o;
+  rayi.o = rayo.o = pvtx1->itsc.itscVtx.position;
+  if(needMIS) {
+    float bxdfPdf = pvtx1->bxdf->sample_pdf(pvtx1->itsc, rayi, rayo);
+    float lpdf_A = scene.getLightPdf(ldd1d, lt)*lt->getItscPdf(itsc, rayi);
+    glm::vec3 dir = itsc.itscVtx.position - pvtx1->itsc.itscVtx.position;
+    float dist2 = dir.x*dir.x+dir.y*dir.y+dir.z*dir.z;
+    float cosTheta = itsc.itscVtx.cosTheta(-rayi.d);
     float lpdf_S = PaToPw(lpdf_A, dist2, cosTheta); // from area to solid angle;
     L *= PowerHeuristicWeight(bxdfPdf, lpdf_S);
   }
@@ -206,6 +260,7 @@ void PathIntegrator::render(const Scene& scene, SubPathGenerator& subpathGen,
   Ray ray; glm::vec2 rasPos;
   DiscreteDistribution1D ldd1d; // light power distr for every shading point
   auto& pathVtxs = subpathGen.getPathVtxs();
+  bool hasMedium = scene.hasMediumInScene();
 
   while(rayGen.genNextRay(ray, rasPos)) {
     // if((int)rasPos.x == 255 && (int)rasPos.y == 228) {
@@ -236,7 +291,16 @@ void PathIntegrator::render(const Scene& scene, SubPathGenerator& subpathGen,
       radiance += L1;
 
       if(needMis) {
-        estimateDirectLightByBSDF(scene, ldd1d, pvtx, L2, needMis);
+        if(hasMedium)
+          estimateDirectLightByBSDF(scene, ldd1d, pvtx, L2, needMis);
+        else {
+          if(i == pathVtxs.size() - 1)
+            estimateDirectLightByBSDF(scene, ldd1d, &pathVtxs[i], nullptr, 
+              &subpathGen.getLastVertex(), L2, needMis);
+          else 
+            estimateDirectLightByBSDF(scene, ldd1d, &pathVtxs[i], &pathVtxs[i+1], 
+              nullptr, L2, needMis);
+        }
         CheckRadiance(L2, rasPos);
         radiance += L2;
       }
@@ -248,8 +312,95 @@ void PathIntegrator::render(const Scene& scene, SubPathGenerator& subpathGen,
   }
 }
 
-// this func need to be changed after
-void PathIntegrator::visualizeRender(
-  PCShower& pc, RayGenerator& rayGen, Scene& scene, Film& film) {
+float BDPTIntegrator::calcMISWeight(
+    const std::vector<PathVertex>& pcam,
+    const std::vector<PathVertex>& plt,
+    int s, int t) const {
+  
 
+}
+
+void BDPTIntegrator::calcFwdPdfs(
+  const std::vector<PathVertex>& pvtx, std::vector<float>& res) const {
+  for(int i = 1; i<pvtx.size(); i++) {
+    if(_HasFeature(pvtx[i-1].bxdf->getType(), DELTA)) continue;
+    Ray rayo{pvtx[i-1].itsc.itscVtx.position, pvtx[i-1].dir_o};
+    Ray rayi{pvtx[i-1].itsc.itscVtx.position, -pvtx[i].dir_o};
+    float pdfs = 
+      pvtx[i-1].bxdf->sample_pdf(pvtx[i-1].itsc, rayi, rayo);
+    glm::vec3 rd = pvtx[i].itsc.itscVtx.position - 
+      pvtx[i-1].itsc.itscVtx.position;
+    float len2 = rd.x*rd.x+rd.y*rd.y+rd.z*rd.z;
+    float cosTheta = pvtx[i].itsc.itscVtx.cosTheta(pvtx[i].dir_o);
+    float pdfa = PwToPa(pdfs, len2, cosTheta);
+    res[i] = pdfa;
+  }
+}
+
+void BDPTIntegrator::calcRevPdfs(
+  const std::vector<PathVertex>& pvtx, std::vector<float>& res) const {
+  for(int i = (int)pvtx.size()-3; i>=0; i--) {
+    if(_HasFeature(pvtx[i+1].bxdf->getType(), DELTA)) continue;
+    Ray rayo{pvtx[i+1].itsc.itscVtx.position, -pvtx[i+2].dir_o};
+    Ray rayi{pvtx[i+1].itsc.itscVtx.position, pvtx[i+1].dir_o};
+    float pdfs = 
+      pvtx[i+1].bxdf->sample_pdf(pvtx[i+1].itsc, rayi, rayo);
+    glm::vec3 rd = pvtx[i].itsc.itscVtx.position - 
+      pvtx[i+1].itsc.itscVtx.position;
+    float len2 = rd.x*rd.x+rd.y*rd.y+rd.z*rd.z;
+    float cosTheta = pvtx[i].itsc.itscVtx.cosTheta(-pvtx[i+1].dir_o);
+    float pdfa = PwToPa(pdfs, len2, cosTheta);
+    res[i] = pdfa;
+  }
+}
+
+void BDPTIntegrator::render(const Scene& scene, SubPathGenerator& subpathGen,
+    RayGenerator& rayGen, Film& film) const {
+
+  DiscreteDistribution1D ldd1d;
+  Ray rayFromCam, rayFromLight; 
+  glm::vec2 rasPosCam, rasPosLight;
+  const Light* lt; Intersection litsc;
+
+  std::vector<float> camFwdPdf, camRevPdf;
+  std::vector<float> ltFwdPdf, ltRevPdf;
+
+  while(rayGen.genNextRay(rayFromCam, rasPosCam)) {
+
+    subpathGen.clear();
+    SubPathGenerator::transportMode = PathTransportMode::FromCamera;
+    int bcam = subpathGen.createSubPath(rayFromCam, scene, max_bounce);
+    LastVertex lsvtx = subpathGen.getLastVertex();
+    std::vector<PathVertex> pvtxs_cam = subpathGen.getPathVtxs();
+
+
+    if(pvtxs_cam.size() == 0) {
+      if(!lsvtx.lt) continue;
+      glm::vec3 L = lsvtx.lt->evaluate(lsvtx.itsc, lsvtx.dir_o);
+      film.addSplat(L, rasPosCam);
+      continue;
+    }
+
+    subpathGen.clear();
+    float pdf_l = scene.sampleALight(lt);
+    float pdf_A, pdf_D;
+    lt->genRay(litsc, rayFromLight, pdf_A, pdf_D);
+    SubPathGenerator::transportMode = PathTransportMode::FromLight;
+    int blt = subpathGen.createSubPath(rayFromLight, scene, max_bounce);
+    std::vector<PathVertex> pvtxs_lt = subpathGen.getPathVtxs();
+
+    camFwdPdf.resize(pvtxs_cam.size());
+    camRevPdf.resize(pvtxs_cam.size());
+    ltFwdPdf.resize(pvtxs_lt.size());
+    ltRevPdf.resize(pvtxs_lt.size());
+
+    calcFwdPdfs(pvtxs_cam, camFwdPdf);
+    calcFwdPdfs(pvtxs_lt, ltFwdPdf);
+    calcRevPdfs(pvtxs_cam, camRevPdf);
+    calcRevPdfs(pvtxs_lt, ltRevPdf);
+
+    for(int i = 0; i<pvtxs_cam.size(); i++) {
+
+    }
+  }
 }

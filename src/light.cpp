@@ -27,12 +27,42 @@ float ShapeLight::getItscOnLight(Intersection& itsc, glm::vec3 evaP) const {
   return pdf;
 }
 
+void ShapeLight::genRay(Intersection& itsc, Ray& ray, float& pdf_A, float& pdf_D) const {
+  pdf_A = 1.0f/PI2;
+  pdf_A = getItscOnLight(itsc, glm::vec3(0.0f));
+  glm::vec2 dir_i = _ThreadSampler.uniSampleHemiSphere();
+  float sinTheta = glm::sqrt(1-glm::min(1.0f, dir_i.x*dir_i.x));
+  glm::vec3 tanp(
+    sinTheta*glm::cos(dir_i.y), 
+    sinTheta*glm::sin(dir_i.y),
+    dir_i.x);
+  ray.o = itsc.itscVtx.position;
+  ray.d = itsc.toWorldSpace(tanp);
+  itsc.maxErrorOffset(ray.d, ray.o);
+}
+
+void PointLight::genRay(Intersection& itsc, Ray& ray, float& pdf_A, float& pdf_D) const {
+  glm::vec3 dir;
+  glm::vec2 uv = _ThreadSampler.uniSampleSphere();
+  dir.y = uv.x;
+  float sinTheta = glm::sqrt(1-glm::min(1.0f, uv.x*uv.x));
+  dir.x = sinTheta*glm::cos(uv.y);
+  dir.z = sinTheta*glm::sin(uv.y);
+  ray.o = position;
+  ray.d = dir;
+  itsc.itscVtx.position = position;
+  itsc.itscVtx.normal = dir;
+  itsc.prim = nullptr;
+  pdf_D = 1.0f/PI4;
+  pdf_A = 1.0f;
+}
+
 float DirectionalLight::selectProbality(const Scene& scene) {
   // use the circle of the total scene as the area
   // maybe improve in the later
-  BB3 totBB3 = scene.getWholeBound();
-  sceneDiameter = totBB3.getDiagonalLength();
-  return Luminance(le);
+  worldBB3 = scene.getWholeBound();
+  sceneDiameter = worldBB3.getDiagonalLength();
+  return 0.25f*PI*sceneDiameter*sceneDiameter* Luminance(le);
 }
 
 EnvironmentLight::EnvironmentLight(const Texture* tex): environment(tex) {
@@ -57,9 +87,9 @@ void EnvironmentLight::addToScene(Scene& scene) {
 float EnvironmentLight::selectProbality(const Scene& scene) {
   // use the circle of the total scene as the area
   // maybe improve in the later
-  BB3 totBB3 = scene.getWholeBound();
-  sceneDiameter = totBB3.getDiagonalLength();
-  return PI4*avgLuminance;
+  worldBB3 = scene.getWholeBound();
+  sceneDiameter = worldBB3.getDiagonalLength();
+  return PI4*sceneDiameter*sceneDiameter*avgLuminance;
 }
 
 glm::vec3 EnvironmentLight::evaluate(
@@ -123,4 +153,6 @@ float EnvironmentLight::getItscPdf(const Intersection& itsc, const Ray& rayToLig
 void EnvironmentLight::genRayItsc(
   Intersection& itsc, const Ray& rayToLight, glm::vec3 evaP) const {
   itsc.itscVtx.position = evaP + rayToLight.d*sceneDiameter;
+  itsc.itscVtx.normal = -rayToLight.d;
+  itsc.prim = nullptr;
 }

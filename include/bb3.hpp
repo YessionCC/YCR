@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 #include <algorithm>
 #include "const.hpp"
+#include "sampler.hpp"
 #include "ray.hpp"
 
 class BB3 {
@@ -74,6 +75,10 @@ public:
 
   inline float getDiagonalLength() const{
     return glm::length(pMax - pMin);
+  }
+
+  inline glm::vec3 uniSampleAPointInside() const {
+    return pMin+_ThreadSampler.get3()*(pMax-pMin);
   }
 
   inline void get8Cornor(glm::vec3* cs) const{

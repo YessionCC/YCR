@@ -23,6 +23,7 @@ private:
   DiscreteDistribution1D ldistribution; // light distribution
   
   const Medium* globalMedium = nullptr;
+  bool hasMedium = false;
 
   BB3 sceneBB3;
   BVH bvh;
@@ -61,6 +62,7 @@ public:
   BB3 getWholeBound() const;
   inline const BVH& getBVH() const {return bvh;}
   inline const Medium* getGlobalMedium() const {return globalMedium;}
+  inline bool hasMediumInScene() const {return hasMedium;}
 
   // return pdf
   float sampleALight(const Light*& light) const;

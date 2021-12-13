@@ -21,7 +21,7 @@ Camera cam(film, {0, 6, 14}, {0, -0.45f, -1});
 //Camera cam(film, {0, 14, 35}, {0, -0.4f, -1});
 //Camera cam(film, {0, 14, 50}, {0, -0.4f, -1});
 RenderProcShower rShower(film);
-ParallelRenderer pRenderer(scene, cam, film, 4096, 12);
+ParallelRenderer pRenderer(scene, cam, film, 256, 12);
 
 int main() {
   glm::vec3 vtxsl[3] = {{-8,6,0}, {-8,7,0}, {-8,6,1}};
