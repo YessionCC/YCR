@@ -115,6 +115,12 @@ float Scene::getLightPdf(const DiscreteDistribution1D& ldd1d, const Light* lt) c
   return ldd1d.getPdf(res->second);
 }
 
+float Scene::getLightPdf(const Light* lt) const {
+  if(lights.size() == 1) return 1.0f;
+  auto res = ltIdx.find(lt);
+  return ldistribution.getPdf(res->second);
+}
+
 BB3 Scene::getWholeBound() const{
   return bvh.getWholeBound();
 }

@@ -70,7 +70,8 @@ public:
   float dynamicSampleALight(const Light*& light, glm::vec3 evap) const;
   void getPositionLightDD1D(glm::vec3 evap, DiscreteDistribution1D& dd1d) const;
   float getLightPdf(const DiscreteDistribution1D& ldd1d, const Light* lt) const;
-
+  // this is for non-dynamicSample strategy
+  float getLightPdf(const Light* lt) const;
   // For Debug
   void saveBVHHierachyAsPointCloud(PCShower& pc);
 };

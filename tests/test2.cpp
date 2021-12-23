@@ -16,12 +16,13 @@
 PCShower pc;
 Scene scene;
 Film film(800, 800, 60);
-//Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
-Camera cam(film, {0, 6, 14}, {0, -0.45f, -1});
+Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
+//Camera cam(film, {0, 6, 14}, {0, -0.45f, -1});
 //Camera cam(film, {0, 14, 35}, {0, -0.4f, -1});
 //Camera cam(film, {0, 14, 50}, {0, -0.4f, -1});
+//Camera cam(film, {-4,2,0}, {1, -0.3, 0});
 RenderProcShower rShower(film);
-ParallelRenderer pRenderer(scene, cam, film, 256, 12);
+ParallelRenderer pRenderer(scene, cam, new PathIntegrator(), film, 1024, 12);
 
 int main() {
   glm::vec3 vtxsl[3] = {{-8,6,0}, {-8,7,0}, {-8,6,1}};
@@ -33,6 +34,7 @@ int main() {
   glm::vec3 vtxs6[4] = {{0,0,0}, {5,0,2}, {0,5,0}};
 
   Model nano("/home/yession/Code/Cpp/ycr/models/Nanosuit/nanosuit.obj");
+  //Model casa("/home/yession/下载/casa2.obj");
   Model deer("/home/yession/Code/Cpp/ycr/models/Deer/deer.obj");
   Model cube("/home/yession/Code/Cpp/ycr/models/Cube/cube.obj");
   Model sphere(CustomMesh::CreateSphere(glm::vec3(-4, -4, 1.2f), 3));
@@ -79,7 +81,7 @@ int main() {
     new PerfectTransimission(new SolidTexture(1.0f), 1.4f), new FixBlender(0.5f));
   
   bkg.setBxdfForAllMeshes(bxdf4);
-  bkg2.setBxdfForAllMeshes(bxdf7);//
+  bkg2.setBxdfForAllMeshes(bxdf2);//
   sphere.setBxdfForAllMeshes(bxdf9);
   mGlass.setBxdfForAllMeshes(bxdf9);
   //sphere.setNormalMapForAllMeshes(blockNormal);
@@ -128,21 +130,22 @@ int main() {
     sT, sigmaS, &sphere3, new HenyeyPhase(0.5, sigmaS));
 
   //scene.addGlobalMedium(medium);
-  scene.addModel(nano);
+  //scene.addModel(nano);
+  //scene.addModel(casa);
   scene.addLight(light);
   //scene.addLight(light3);
   //scene.addLight(light4);
-  scene.addLight(envLight);
+  //scene.addLight(envLight);
   //scene.addLight(light2);
   //scene.addModel(bkg);
   scene.addModel(bkg2);
-  scene.addModel(sphere);
-  scene.addModel(sphere2);
+  // scene.addModel(sphere);
+  // scene.addModel(sphere2);
   //scene.addModel(sphere3);
-  scene.addModel(cube);
+  // scene.addModel(cube);
   //scene.addModel(mGlass);
   //scene.addModel(deer);
-  //scene.addMedium(medium, true);
+  scene.addMedium(medium, true);
   // scene.addModel(cube2);
 
   scene.init();

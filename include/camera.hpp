@@ -81,6 +81,8 @@ public:
     sp2d.clear();
   }
 
+  inline glm::vec3 getCamPos() const {return camera.getPosition();}
+
   bool genNextRay(Ray& ray, glm::vec2& rasterPos) {
     if(cntx >= curRenderBlock.width || 
        cnty >= curRenderBlock.height) 

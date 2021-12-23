@@ -3,9 +3,9 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb/stb_image_write.h"
 
-Film::Film(int reX, int reY, float fov, Filter* filter): 
-  resolutionX(reX), resolutionY(reY), 
-  fov(fov), filter(filter), fradius(filter->getRadius()-0.5f) {
+Film::Film(int reX, int reY, float fov, Filter* filter, bool toneMap): 
+  resolutionX(reX), resolutionY(reY), fov(fov), 
+  filter(filter), fradius(filter->getRadius()-0.5f), toneMap(toneMap) {
   
   float t = 2.0f*glm::tan(glm::radians(.5f*fov));
   sensorX = t, sensorY = t*reY/reX;
@@ -61,7 +61,10 @@ void Film::generateImage(const char* filename, float exposure) const {
   for(int i=0; i<totPix; i++) {
     if(pWeights[i] > 0.0f) pix = pixels[i] / pWeights[i];
     else pix = glm::vec3(0.0f);
-    pix = 255.0f*(1.0f - glm::exp(-exposure*pix));
+    if(toneMap)
+      pix = 255.0f*(1.0f - glm::exp(-exposure*pix));
+    else 
+      pix = 255.0f*glm::clamp(pix, 0.0f, 1.0f);
     output[i*3] = (unsigned char)(pix.x);
     output[i*3+1] = (unsigned char)(pix.y);
     output[i*3+2] = (unsigned char)(pix.z);
@@ -75,7 +78,10 @@ void Film::generateImage(unsigned char* imgMat, float exposure) const {
   for(int i=0; i<totPix; i++) {
     if(pWeights[i] > 0.0f) pix = pixels[i] / pWeights[i];
     else pix = glm::vec3(0.0f);
-    pix = 255.0f*(1.0f - glm::exp(-exposure*pix));
+    if(toneMap)
+      pix = 255.0f*(1.0f - glm::exp(-exposure*pix));
+    else 
+      pix = 255.0f*glm::clamp(pix, 0.0f, 1.0f);
     imgMat[i*3] = (unsigned char)(pix.x);
     imgMat[i*3+1] = (unsigned char)(pix.y);
     imgMat[i*3+2] = (unsigned char)(pix.z);

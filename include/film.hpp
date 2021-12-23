@@ -23,12 +23,15 @@ private:
   Filter* filter;
   float fradius;
 
+  bool toneMap;
+
   std::atomic<int>* mutexMat;
 
 public:
   Film() {}
   //reX: image width, reY: image height, fov: degree
-  Film(int reX, int reY, float fov, Filter* filter = new BoxFilter(0.5f));
+  Film(int reX, int reY, float fov, 
+    Filter* filter = new BoxFilter(0.5f), bool toneMap = false);
 
   Film(const Film&) = delete;
   const Film& operator=(const Film&) = delete;
@@ -44,6 +47,11 @@ public:
     float cx = -camera.x / camera.z;
     float cy = -camera.y / camera.z;
     return {(cx+sXhalf)/rasterPropX, (sYhalf-cy)/rasterPropY};
+  }
+
+  inline bool isValidRasPos(glm::vec2 rasPos) const {
+    return rasPos.x >=0 && rasPos.x < resolutionX &&
+      rasPos.y >=0 && rasPos.y <resolutionY;
   }
 
   void addSplat(glm::vec3 L, glm::vec2 center);

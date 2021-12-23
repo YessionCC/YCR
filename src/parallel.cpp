@@ -5,7 +5,7 @@
 #include <chrono>
 
 ParallelRenderThread::ParallelRenderThread(
-  const Scene& scene, const PathIntegrator& integrator, 
+  const Scene& scene, const Integrator* integrator, 
   const Camera& cam, ParallelRenderer& pMan, Film& film, int spp): 
   film(film), scene(scene), integrator(integrator), pMan(pMan), rayGen(cam, spp){}
 
@@ -13,13 +13,14 @@ void ParallelRenderThread::render(){
   Block2D curBlock;
   while(pMan.getOneBlock(curBlock)) {
     rayGen.reset(curBlock);
-    integrator.render(scene, subpathGen, rayGen, film);
+    integrator->render(scene, rayGen, film);
   }
 } 
 
 
 
-ParallelRenderer::ParallelRenderer(const Scene& scene, const Camera& cam, 
+ParallelRenderer::ParallelRenderer(
+  const Scene& scene, const Camera& cam, const Integrator* integrator,
   Film& film, int spp, int threadNum):
   film(film), filmX(cam.getReX()), filmY(cam.getReY()), 
   spp(spp), threadNum(threadNum){

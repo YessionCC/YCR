@@ -28,6 +28,10 @@ inline bool Refract(glm::vec3 dir_o, glm::vec3 normal,
   }
 }
 
+inline float dist2(glm::vec3 vec) {
+  return vec.x*vec.x+vec.y*vec.y+vec.z*vec.z;
+}
+
 inline float PaToPw(float pdf, float dist2, float cosTheta) {
   return pdf*dist2/cosTheta;
 }
