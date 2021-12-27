@@ -15,6 +15,7 @@ private:
 
   glm::vec3 position;
   glm::mat3x3 cam2world_rot;
+  glm::mat3x3 world2cam_rot;
 
   const Film& film;
 
@@ -30,6 +31,7 @@ public:
 
     this->position = position;
     this->cam2world_rot = glm::mat3x3(cam2world);
+    this->world2cam_rot = glm::mat3x3(world2cam);
   }
 
   void generateRay(Ray& ray, glm::vec2 rasterPos) const{
@@ -37,6 +39,11 @@ public:
     glm::vec3 camdir = glm::normalize(glm::vec3(camPos, -1.0f));
     ray.o = position;
     ray.d = cam2world_rot*camdir;
+  }
+
+  inline glm::vec2 world2raster(glm::vec3 wp) const {
+    glm::vec3 camp = world2cam_rot*(wp - position);
+    return film.camera2raster(camp);
   }
 
   inline glm::vec3 getPosition() const {return position;}
@@ -82,6 +89,7 @@ public:
   }
 
   inline glm::vec3 getCamPos() const {return camera.getPosition();}
+  inline glm::vec2 world2raster(glm::vec3 wp) const {return camera.world2raster(wp);}
 
   bool genNextRay(Ray& ray, glm::vec2& rasterPos) {
     if(cntx >= curRenderBlock.width || 

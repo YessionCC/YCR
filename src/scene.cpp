@@ -32,6 +32,7 @@ void Scene::addMedium(Medium* medium, bool noBXDF) {
 // global medium must add before all model
 void Scene::addGlobalMedium(const Medium* medium) {
   this->globalMedium = medium;
+  this->hasMedium = true;
 }
 
 void Scene::addPrimitive(const Primitive* prim) {

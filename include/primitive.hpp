@@ -29,6 +29,8 @@ public:
   virtual void scale(glm::vec3) = 0;
   virtual void rotate(glm::vec3, float) = 0;
 
+  virtual bool hasSurface() const {return true;}
+
   virtual inline const Mesh* getMesh() const {return mesh;}
 
   virtual inline glm::vec3 getCenter() const = 0;
@@ -179,32 +181,34 @@ public:
     std::cout<<"PointPrim::rotate is undefined"<<std::endl;
   }
 
-  virtual inline glm::vec3 getCenter() const {return position;}
+  bool hasSurface() const {return false;}
 
-  virtual inline float getArea() const {return 0;}
+  inline glm::vec3 getCenter() const {return position;}
+
+  inline float getArea() const {return 0;}
 
   // return pdf
-  virtual float getAPointOnSurface(Intersection& itsc) const{
+  float getAPointOnSurface(Intersection& itsc) const{
     itsc.itscVtx.position = position;
     itsc.prim = this;
     return 1.0f;
   }
 
   // notice: itsc as in-out variable
-  virtual void intersect(const Ray& ray, Intersection& itsc) const{
+  void intersect(const Ray& ray, Intersection& itsc) const{
     std::cout<<"PointPrim::intersect is undefined"<<std::endl;
   }
 
   // just return whether intersect or not
-  virtual bool intersectTest(const Ray& ray) const {
+  bool intersectTest(const Ray& ray) const {
     std::cout<<"PointPrim::intersectTest is undefined"<<std::endl;
     return false;
   }
 
   //set normal, uv, and other for itsc
-  virtual void handleItscResult(Intersection& itsc) const {}
+  void handleItscResult(Intersection& itsc) const {}
 
-  virtual void genPrimPointCloud(PCShower& pc, glm::vec3 col) const {
+  void genPrimPointCloud(PCShower& pc, glm::vec3 col) const {
     pc.addItem(position, col);
   }
 };

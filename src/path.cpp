@@ -54,7 +54,61 @@ void estimateDirectLightByLi(
   }
 }
 
+void estimateDirectLightByBXDF(
+  const Scene& scene, const DiscreteDistribution1D& ldd1d,
+  const Intersection itsc, const BXDF* bxdf, const Medium* inMedium,
+  const Ray& rayo, glm::vec3& L, bool needMIS) {
 
+  Ray rayToLight;
+  glm::vec3 tr(1.0f); L = glm::vec3(0.0f);
+
+  glm::vec3 beta = bxdf->sample_ev(itsc, rayo, rayToLight);
+  if(IsBlack(beta)) return;
+
+  Intersection itsc_sp = scene.intersectDirectly(rayToLight, inMedium, tr);
+
+  const Light* lt = nullptr; 
+  if(itsc_sp.prim) {
+    lt = itsc_sp.prim->getMesh()->material.light;
+    if(lt) {
+      if(itsc_sp.normalReverse) return;
+      L = tr*beta*lt->evaluate(itsc_sp, -rayToLight.d);
+    }
+    else return;
+  }
+  else {
+    if(scene.envLight) {// TODO: currently we only need to take envLight into account
+      lt = scene.envLight;
+      scene.envLight->genRayItsc(itsc_sp, rayToLight, itsc.itscVtx.position);
+      L = tr*beta*scene.envLight->evaluate(itsc_sp, -rayToLight.d);
+    }
+    else return;
+  }
+
+  if(needMIS) {
+    float bxdfPdf = bxdf->sample_pdf(itsc, rayToLight, rayo);
+    float lpdf_A = scene.getLightPdf(ldd1d, lt)*lt->getItscPdf(itsc_sp, rayToLight);
+    glm::vec3 dir = itsc_sp.itscVtx.position - itsc.itscVtx.position;
+    float dist2 = dir.x*dir.x+dir.y*dir.y+dir.z*dir.z;
+    float cosTheta = itsc_sp.itscVtx.cosTheta(-rayToLight.d);
+    float lpdf_S = PaToPw(lpdf_A, dist2, cosTheta); // from area to solid angle;
+    L *= PowerHeuristicWeight(bxdfPdf, lpdf_S);
+  }
+}
+
+// rayToLight.o is at pre itsc.position and rayToLight.d point to light
+float estimateDirectLightByBXDF(
+  const Scene& scene, const DiscreteDistribution1D& ldd1d,
+  const Intersection& itsc_lt, const Ray& rayToLight, 
+  const Light* lt, float sample_pdfw) {
+
+  float len2 = dist2(itsc_lt.itscVtx.position - rayToLight.o);
+  float cosTheta = itsc_lt.itscVtx.cosTheta(-rayToLight.d);
+
+  float lpdf_A = scene.getLightPdf(ldd1d, lt)*lt->getItscPdf(itsc_lt, rayToLight);
+  float lpdf_S = PaToPw(lpdf_A, len2, cosTheta);
+  return PowerHeuristicWeight(sample_pdfw, lpdf_S);
+}
 
 
 void PathIntegrator::render(
@@ -62,11 +116,12 @@ void PathIntegrator::render(
   
   Ray startRay; glm::vec2 rasPos;
   bool hasMedium = scene.hasMediumInScene();
+  //long long int bounce_cnt = 0;
   
   while(rayGen.genNextRay(startRay, rasPos)) {
-    // if((int)rasPos.x == 245 && (int)rasPos.y == 625) {
-    //   int debug = 1;
-    // }
+    if((int)rasPos.x == 238 && (int)rasPos.y == 494) {
+      int debug = 1;
+    }
 
     glm::vec3 beta(1.0f), L(0.0f);
     Intersection itsc;
@@ -75,26 +130,51 @@ void PathIntegrator::render(
     int lastBType = BType::DELTA;
     DiscreteDistribution1D ldd1d;
 
+    bool needMIS = false; 
+    const BXDF* bxdf = nullptr; 
+
+    float sample_pdfw = 0.0f; // for mis
+
     const Medium* inMedium = scene.getGlobalMedium();
 
     for(int bounce = 0; bounce<max_bounce; bounce++) {
+      // bounce_cnt ++;
+      // if(bounce_cnt == 4134921) {
+      //   int debug = 2;
+      // }
+
       itsc = scene.intersect(ray, nullptr);
       if(inMedium)
         beta *= inMedium->sampleNextItsc(ray, itsc);
+
       
       if(!itsc.prim) {
         if(scene.envLight && _HasFeature(lastBType, DELTA)) {
           L += scene.envLight->evaluate(itsc, -ray.d)*beta;
         }
+        if(scene.envLight && needMIS && !hasMedium && _Connectable(lastBType)) {
+          Intersection itsc_lt;
+          scene.envLight->genRayItsc(itsc_lt, ray, ray.o);
+          float mis = estimateDirectLightByBXDF(
+            scene, ldd1d, itsc_lt, ray, scene.envLight, sample_pdfw);
+          L += mis*scene.envLight->evaluate(itsc, -ray.d)*beta;
+        }
         break;
       }
 
       const Material& mat = itsc.prim->getMesh()->material;
-      if(itsc.cosTheta(ray.d)>0.0f) itsc.reverseNormal();
+      if(itsc.prim->hasSurface() && itsc.cosTheta(ray.d)>0.0f) itsc.reverseNormal();
 
       if(mat.light) {
         if(!itsc.normalReverse && _HasFeature(lastBType, DELTA)) {
           L += mat.light->evaluate(itsc, -ray.d)*beta;
+        }
+        if(!itsc.normalReverse && needMIS && 
+          !hasMedium && _Connectable(lastBType)) {
+            
+          float mis = estimateDirectLightByBXDF(
+            scene, ldd1d, itsc, ray, mat.light, sample_pdfw);
+          L += mis*mat.light->evaluate(itsc, -ray.d)*beta;
         }
         if(!mat.bxdfNode) break;
       }
@@ -106,8 +186,7 @@ void PathIntegrator::render(
       ray.o = itsc.itscVtx.position; 
       ray.d = -ray.d;
 
-      const BXDF* bxdf;
-      float bxdfWeight = mat.getBXDF(itsc, ray, bxdf);
+      float bxdfWeight = mat.getBXDF(itsc, ray, bxdf); // bxdf update here
 
       glm::vec3 nBeta = bxdfWeight * bxdf->sample_ev(itsc, ray, sampleRay);
 
@@ -121,13 +200,27 @@ void PathIntegrator::render(
         itsc.itscVtx.position = sampleRay.o;
       }
 
-      /**********estimate direct light*************/
-      if(!_HasFeature(lastBType, DELTA)) {
+      /**********estimate direct light and useMIS*************/
+      if(_Connectable(lastBType)) {
         glm::vec3 light_L;
+        needMIS = useMIS && bxdf->needMIS(itsc);
+
         scene.getPositionLightDD1D(itsc.itscVtx.position, ldd1d);
         estimateDirectLightByLi(
-          scene, ldd1d, itsc, bxdf, mat.mediumOutside, ray, light_L, false);
+          scene, ldd1d, itsc, bxdf, mat.mediumOutside, ray, light_L, needMIS);
+        CheckRadiance(light_L, rasPos);
         L += beta*light_L;
+
+        if(needMIS && hasMedium) {
+          glm::vec3 BXDF_L;
+          estimateDirectLightByBXDF(
+            scene, ldd1d, itsc, bxdf, mat.mediumOutside, ray, BXDF_L, useMIS);
+          CheckRadiance(BXDF_L, rasPos);
+          L += beta*BXDF_L;
+        }
+        if(needMIS && !hasMedium) {//
+          sample_pdfw = bxdf->sample_pdf(itsc, ray, sampleRay);
+        }
       }
       /********************************************/
       
@@ -136,6 +229,7 @@ void PathIntegrator::render(
       if(!_IsType(lastBType, NoSurface)) 
         inMedium = itsc.isRayToInside(ray)? mat.mediumInside:mat.mediumOutside;
     }
+    CheckRadiance(L, rasPos);
     film.addSplat(L, rasPos);
   }
 }

@@ -13,9 +13,11 @@ The program is compiled under Ubuntu 18.04， GCC， C++11
 
 ## Features
 - Path tracing with MIS
+- Bidirectional path tracing with MIS
 - Multithreading acceleration
 - SAH-BVH heurisitic acceleration structure
-- Support medium (volume render)
+- Bump mapping
+- Support medium (volume render, both pt and bdpt are supported)
 - Support HDR output
 - Supports importing obj files and transform its materials to PBR materials
 - Support lights:
@@ -39,15 +41,21 @@ The program is compiled under Ubuntu 18.04， GCC， C++11
 
 ## Expected Features
 - Read configuration from yaml
-- Bidirectional path tracing (Though it's very difficult, I have started out)
+- Robust and really correct bidirectional path tracing (adjoint bxdf ...)
 - Render hair (based on Bezier curve)
 
 ## Some Results
-- 1024 spp, 205s
+- 1024 spp, 205s, pt, Environment light/GGX/Specular/Lambertain
 ![Ball](/present/ball.jpg "Ball")
 
-- 1024 spp, 4min
+- 1024 spp, 4min, pt, Global fog
 ![Fog](/present/fog.jpg "Fog")
 
-- 4096 spp, 25min
+- 4096 spp, 25min, pt, Obj model
 ![Nano](/present/nano.jpg "Nano")
+
+- 1024 spp, 305s, bdpt, Glass Caustic
+![bdpt_glass](/present/res_bdpt1024.jpg "bdpt_glass")
+
+- 256 spp, 442s, bdpt, Global fog(bdpt denoise)
+![bdpt_global_fog](/present/res_glfogbdpt256.jpg "bdpt_global_fog")

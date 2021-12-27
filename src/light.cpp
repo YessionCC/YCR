@@ -28,7 +28,7 @@ float ShapeLight::getItscOnLight(Intersection& itsc, glm::vec3 evaP) const {
 }
 
 void ShapeLight::genRay(Intersection& itsc, Ray& ray, float& pdf_A, float& pdf_D) const {
-  pdf_A = 1.0f/PI2;
+  pdf_D = 1.0f/PI2;
   pdf_A = getItscOnLight(itsc, glm::vec3(0.0f));
   glm::vec2 dir_i = _ThreadSampler.uniSampleHemiSphere();
   float sinTheta = glm::sqrt(1-glm::min(1.0f, dir_i.x*dir_i.x));

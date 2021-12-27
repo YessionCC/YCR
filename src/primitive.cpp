@@ -119,7 +119,8 @@ void Triangle::autoCalcParams(bool reverseNormal) {
   glm::vec3 v02 = verts[2]->position - verts[0]->position;
   glm::vec3 normal = glm::normalize(glm::cross(v01, v02));
   if(reverseNormal) normal = -normal;
-  glm::vec3 btan = glm::normalize(glm::cross(v01, normal));
+  v01 = glm::normalize(v01);
+  glm::vec3 btan = glm::cross(v01, normal);
 
   #define SET_PROP(p, v) verts[0]->p = v; verts[1]->p = v; verts[2]->p = v;
 

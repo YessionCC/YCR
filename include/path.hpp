@@ -8,8 +8,10 @@
 class PathIntegrator: public Integrator {
 private:
   int max_bounce;
+  bool useMIS;
 
 public:
-  PathIntegrator(int max_bounce = 12): max_bounce(max_bounce) {}
+  PathIntegrator(int max_bounce = 12, bool useMIS = true): 
+    max_bounce(max_bounce), useMIS(useMIS) {}
   void render(const Scene& scene, RayGenerator& rayGen, Film& film) const;
 };

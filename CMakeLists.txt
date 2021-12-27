@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.5)
 
 project(ycr CXX CUDA)
 
-set(CMAKE_CXX_FLAGS "-g -Wall -std=c++11") 
+set(CMAKE_CXX_FLAGS "-g -Werror=return-type -Wall -std=c++11") 
 set(CMAKE_BUILD_TYPE "Release")
 
 find_package(OpenCV 4.0)

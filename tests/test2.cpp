@@ -4,6 +4,7 @@
 #include "scene.hpp"
 #include "camera.hpp"
 #include "path.hpp"
+#include "bdpt.hpp"
 #include "parallel.hpp"
 #include "bxdfc.hpp"
 
@@ -15,18 +16,18 @@
 
 PCShower pc;
 Scene scene;
-Film film(800, 800, 60);
+Film film(800, 800, 60, true);
 Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
 //Camera cam(film, {0, 6, 14}, {0, -0.45f, -1});
 //Camera cam(film, {0, 14, 35}, {0, -0.4f, -1});
 //Camera cam(film, {0, 14, 50}, {0, -0.4f, -1});
 //Camera cam(film, {-4,2,0}, {1, -0.3, 0});
 RenderProcShower rShower(film);
-ParallelRenderer pRenderer(scene, cam, new PathIntegrator(), film, 1024, 12);
+ParallelRenderer pRenderer(scene, cam, new BDPTIntegrator(), film, 256, 12);
 
 int main() {
   glm::vec3 vtxsl[3] = {{-8,6,0}, {-8,7,0}, {-8,6,1}};
-  glm::vec3 vtxsl2[3] = {{0,0,0}, {0,0,4}, {4,4,4}};
+  glm::vec3 vtxsl2[3] = {{0,4,0}, {4,4,4}, {0,4,4}};
   glm::vec3 vtxs2[3] = {{0,0,0}, {100,0,0}, {0,100,0}};
   glm::vec3 vtxs3[3] = {{0,0,0}, {0,100,0}, {0,0,100}};
   glm::vec3 vtxs4[3] = {{0,0,0}, {0,0,100}, {100,0,0}};
@@ -50,12 +51,12 @@ int main() {
 
   EnvironmentLight* envLight = 
     new EnvironmentLight(
-      new ImageTexture("/home/yession/Code/Cpp/ycr/models/Cube/polar.jpg", 2.0f));
+      new ImageTexture("/home/yession/Code/Cpp/ycr/models/Cube/polar.jpg"));
   EnvironmentLight* envLight2 = 
     new EnvironmentLight(
       new SolidTexture(1.0f));
   Light* light = new ShapeLight(new SolidTexture(800.0f), lgt);
-  Light* light2 = new ShapeLight(new SolidTexture(150.0f), lgt2);
+  Light* light2 = new ShapeLight(new SolidTexture(800.0f), lgt2);
   Light* pLight = new PointLight(glm::vec3(1000), glm::vec3(6,6,6));
   Light* dLight = new DirectionalLight(glm::vec3(3), glm::vec3(0,-1,0));
 
@@ -81,24 +82,24 @@ int main() {
     new PerfectTransimission(new SolidTexture(1.0f), 1.4f), new FixBlender(0.5f));
   
   bkg.setBxdfForAllMeshes(bxdf4);
-  bkg2.setBxdfForAllMeshes(bxdf2);//
+  bkg2.setBxdfForAllMeshes(bxdf6);//
   sphere.setBxdfForAllMeshes(bxdf9);
   mGlass.setBxdfForAllMeshes(bxdf9);
   //sphere.setNormalMapForAllMeshes(blockNormal);
-  //sphere3.setBxdfForAllMeshes(bxdf3);
-  cube.setBxdfForAllMeshes(bxdf3);
-  //nano.setBxdfForAllMeshes(bxdf);
+  sphere3.setBxdfForAllMeshes(bxdf);
+  cube.setBxdfForAllMeshes(bxdf);
+  nano.setBxdfForAllMeshes(bxdf);
   deer.setBxdfForAllMeshes(bxdf7);
   deer.scale(glm::vec3(1e-2f));
   deer.translate({0, -8, -5});
   cube.rotate({0,1,0}, 30);
   cube.scale({5,5,5});
   cube.translate({-2, -4, -6});
-  cube.translate({-3,0,-2});
+  //cube.translate({-3,0,-2});
   //sphere.rotate({0,0,0}, 20);
   nano.translate({0, -7.5, 0});
   nano.translate({2, 0, -5});
-  bkg.translate({-10, -7.5, -10});
+  bkg.translate({-10, -7.5, -12});
   bkg2.rotate({0,1,0}, 45);
   bkg2.translate({-70, -7.5, 0});
   lgt.scale(glm::vec3(4));
@@ -138,14 +139,14 @@ int main() {
   //scene.addLight(envLight);
   //scene.addLight(light2);
   //scene.addModel(bkg);
-  scene.addModel(bkg2);
-  // scene.addModel(sphere);
-  // scene.addModel(sphere2);
+  //scene.addModel(bkg2);
+  scene.addModel(sphere);
+  //scene.addModel(sphere2);
   //scene.addModel(sphere3);
-  // scene.addModel(cube);
+  //scene.addModel(cube);
   //scene.addModel(mGlass);
   //scene.addModel(deer);
-  scene.addMedium(medium, true);
+  //scene.addMedium(medium, true);
   // scene.addModel(cube2);
 
   scene.init();
@@ -165,7 +166,7 @@ int main() {
   cam.visualizePointCloud(pc, 18, 40);
 
   rShower.showProc();
-  pRenderer.render("/home/yession/Code/Cpp/ycr/img/glass_fb6.jpg");
+  pRenderer.render("/home/yession/Code/Cpp/ycr/img/BDPT_RES/res.jpg");
   rShower.terminate();
   //integrator.visualizeRender(pc, rGen, scene, film);
 

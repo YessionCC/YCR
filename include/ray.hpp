@@ -10,6 +10,9 @@ public:
   // NOTICE: must keep direction normalized!
   glm::vec3 o, d;
 
+  Ray(): o(0.0f), d(0.0f) {}
+  Ray(glm::vec3 o, glm::vec3 d): o(o), d(d) {}
+
   inline void normalizeD() {d = glm::normalize(d);}
   inline glm::vec3 pass(float t) const {return o+t*d;}
 

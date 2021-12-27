@@ -14,8 +14,9 @@ struct PathVertex {
   const BXDF* bxdf;
   const Light* light;
   const Medium* inMedium;
-  float fwdPdf = -1.0f, revPdf = -1.0f;
-  PathVertex() {}
+  float fwdPdf = -1.0f;
+  float revPdf = -1.0f;
+  PathVertex(): bxdf(nullptr), light(nullptr), inMedium(nullptr) {}
   PathVertex(const Intersection& itsc, glm::vec3 dir_o, glm::vec3 beta, 
     const BXDF* bxdf = nullptr, const Light* light = nullptr, 
     const Medium* inm = nullptr):
@@ -61,8 +62,9 @@ public:
 
 class BDPTIntegrator: public Integrator {
 private:
-  const int max_sub_path_bounce = 6;
+  int max_sub_path_bounce;
 
 public:
+  BDPTIntegrator(int max_sub_bounce = 6): max_sub_path_bounce(max_sub_bounce) {}
   void render(const Scene& scene, RayGenerator& rayGen, Film& film) const;
 };

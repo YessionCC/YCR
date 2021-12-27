@@ -16,6 +16,7 @@
   (!((BXDF::BXDFNature::wtype ^ (ctype))&0xf))
 #define _HasFeature(ctype, wtype) \
   (BXDF::BXDFNature::wtype & (ctype))
+#define _Connectable(ctype) (!((ctype) & 0x030))
 
 class BXDF: public BXDFNode {
 public:
@@ -28,8 +29,9 @@ public:
 
     // BXDF Feature (combined)
     DELTA = 0x010, // dirac delta bxdf
-    BSSRDF = 0x020,
-    GLOSSY = 0x040, // used for MIS
+    NoInteractive = 0x20, // do not interactive with light
+    BSSRDF = 0x040,
+    GLOSSY = 0x080, // used for MIS
     NONE = 0x000
   };
 
@@ -105,7 +107,7 @@ public:
 class PureTransmission: public BXDF { // for no surface medium
 public:
   PureTransmission(): 
-    BXDF(BXDFNature::DELTA|BXDFNature::TRANSMISSION) {}
+    BXDF(BXDFNature::NoInteractive|BXDFNature::TRANSMISSION) {}
 
   inline glm::vec3 evaluate(
     const Intersection& itsc, const Ray& ray_o, const Ray& ray_i) const override {
