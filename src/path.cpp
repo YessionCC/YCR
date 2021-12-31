@@ -133,6 +133,7 @@ void PathIntegrator::render_no_medium(
     const BXDF* bxdf = nullptr; 
     bool needMIS = false;
     int lastBType = BType::DELTA;
+    float sample_pdfw;
 
     for(int bounce = 0; bounce<max_bounce; bounce++) {
       itsc_cur = scene.intersect(ray_cur, nullptr);
@@ -141,6 +142,7 @@ void PathIntegrator::render_no_medium(
         if(scene.envLight && _HasFeature(lastBType, DELTA)) {
           L += scene.envLight->evaluate(itsc_cur, -ray_cur.d)*beta;
         }
+        
         if(scene.envLight && needMIS && _Connectable(lastBType)) {
           Intersection itsc_lt;
           scene.envLight->genRayItsc(itsc_lt, ray_cur, ray_cur.o);
@@ -159,11 +161,13 @@ void PathIntegrator::render_no_medium(
         if(!itsc_cur.normalReverse && _HasFeature(lastBType, DELTA)) {
           L += mat.light->evaluate(itsc_cur, -ray_cur.d)*beta;
         }
+        
         if(!itsc_cur.normalReverse && needMIS && _Connectable(lastBType)) {
           float mis = estimateDirectLightByBXDF(
-            scene, ldd1d, itsc_cur, itsc_lst, ray_lst, ray_cur, bxdf, scene.envLight);
+            scene, ldd1d, itsc_cur, itsc_lst, ray_lst, ray_cur, bxdf, mat.light);
           L += mis*mat.light->evaluate(itsc_cur, -ray_cur.d)*beta;
         }
+        
         if(!mat.bxdfNode) break;
       }
       if(!mat.bxdfNode) {
@@ -198,6 +202,10 @@ void PathIntegrator::render_no_medium(
           scene, ldd1d, itsc_cur, bxdf, mat.mediumOutside, ray_cur, light_L, needMIS);
         CheckRadiance(light_L, rasPos);
         L += beta*light_L;
+
+        if(needMIS) {//
+          sample_pdfw = bxdf->sample_pdf(itsc_cur, ray_cur, sampleRay);
+        }
       }
       /********************************************/
       

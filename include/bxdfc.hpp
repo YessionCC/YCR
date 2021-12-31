@@ -18,13 +18,27 @@ public:
     ){}
 };
 
-class SpecularCeramics: public MixedBXDF {
+class StandardSpecular: public AddBXDF {
 public:
-  SpecularCeramics(float IOR, const Texture* albedo):
-    MixedBXDF(
-      new PerfectSpecular(new SolidTexture(1.0f)),
-      new LambertianReflection(albedo),
-      new DielectricFresnelBlender(IOR)
+  StandardSpecular(float IOR, const Texture* base, const Texture* refl):
+    AddBXDF(
+      new LambertianReflection(base),
+      new WeightedBXDF(
+        new PerfectSpecular(refl),
+        new DielectricFresnelBlender(IOR)
+      )
+    ){}
+};
+
+class StandardGGXRefl: public AddBXDF {
+public:
+  StandardGGXRefl(float IOR, const Texture* rough, const Texture* base, const Texture* refl):
+    AddBXDF(
+      new LambertianReflection(base),
+      new WeightedBXDF(
+        new GGXReflection(rough, base),
+        new DielectricFresnelBlender(IOR)
+      )
     ){}
 };
 

@@ -51,6 +51,24 @@ public:
   }
 };
 
+class AddBXDF: public BXDFNode {
+private:
+  const BXDFNode* bxdfNode1; 
+  const BXDFNode* bxdfNode2; 
+  
+public:
+  virtual ~AddBXDF() {}
+  AddBXDF(const BXDFNode* bxdfNode1, const BXDFNode* bxdfNode2):
+    bxdfNode1(bxdfNode1), bxdfNode2(bxdfNode2) {}
+
+  inline float getBXDF(
+    const Intersection& itsc, const Ray& ray_o, const BXDFNode*& bxdfNode) const override {
+    return _ThreadSampler.get1() < 0.5f ?
+      2.0f*bxdfNode1->getBXDF(itsc, ray_o, bxdfNode):
+      2.0f*bxdfNode2->getBXDF(itsc, ray_o, bxdfNode);
+  }
+};
+
 class Medium;
 class Light;
 class Texture;

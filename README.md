@@ -48,8 +48,8 @@ The program is compiled under Ubuntu 18.04， GCC， C++11
 - 1024 spp, 205s, pt, Environment light/GGX/Specular/Lambertain
 ![Ball](/present/ball.jpg "Ball")
 
-- 1024 spp, 4min, pt, Global fog
-![Fog](/present/fog.jpg "Fog")
+- 4096 spp, 40min, pt, Specular/Glass
+![Scene](/present/scene.jpg "Scene")
 
 - 4096 spp, 25min, pt, Obj model
 ![Nano](/present/nano.jpg "Nano")

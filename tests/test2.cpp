@@ -16,14 +16,14 @@
 
 PCShower pc;
 Scene scene;
-Film film(800, 800, 60, false);
+Film film(800, 800, 60, true);
 Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
 //Camera cam(film, {0, 6, 14}, {0, -0.45f, -1});
 //Camera cam(film, {0, 14, 35}, {0, -0.4f, -1});
 //Camera cam(film, {0, 14, 50}, {0, -0.4f, -1});
 //Camera cam(film, {-4,2,0}, {1, -0.3, 0});
 RenderProcShower rShower(film);
-ParallelRenderer pRenderer(scene, cam, new PathIntegrator(), film, 1024, 12);
+ParallelRenderer pRenderer(scene, cam, new PathIntegrator(8), film, 16384, 12);
 
 int main() {
   glm::vec3 vtxsl[3] = {{-8,6,0}, {-8,7,0}, {-8,6,1}};
@@ -63,7 +63,7 @@ int main() {
   BXDFNode* bxdf = new PerfectGlass(1.4f, new SolidTexture(glm::vec3(1.0f)));
   ImageTexture* imgtex = 
     new ImageTexture("/home/yession/Code/Cpp/ycr/models/Cube/grid2.jpeg");
-  imgtex->setUVScale({5.0f, 5.0f});
+  imgtex->setUVScale({2.0f, 2.0f});
   imgtex->setUVOffset({0.6f, 0.2f});
   ImageTexture* imgtex2 = 
     new ImageTexture("/home/yession/Code/Cpp/ycr/models/Cube/grid.jpeg");
@@ -76,14 +76,15 @@ int main() {
   BXDF* bxdf6 = new GGXReflection(new SolidTexture(0.002f), new SolidTexture(1.0f));
   BXDF* bxdf7 = new GGXReflection(new SolidTexture(0.002f), imgtex);
   BXDF* bxdf9 = new GGXTransimission(1.4f, new SolidTexture(0.01f), new SolidTexture(1.0f));
-  BXDFNode* bxdf8 = new SpecularCeramics(1.4f, new SolidTexture(1.0f));
+  BXDFNode* bxdf8 = new StandardSpecular(1.4f, new SolidTexture(glm::vec3(0.8f,0.0f,0.0f)), new SolidTexture(1.0f));
+  BXDFNode* bxdfx = new StandardGGXRefl(1.45f, new SolidTexture(0.002f), new SolidTexture(glm::vec3(0.0f, 0.8f, 0.0f)), new SolidTexture(1.0f));
 
   BXDFNode* bxdfc = new MixedBXDF(bxdf4, 
     new PerfectTransimission(new SolidTexture(1.0f), 1.4f), new FixBlender(0.5f));
   
-  bkg.setBxdfForAllMeshes(bxdf4);
+  bkg.setBxdfForAllMeshes(bxdf5);
   bkg2.setBxdfForAllMeshes(bxdf6);//
-  sphere.setBxdfForAllMeshes(bxdf6);
+  sphere.setBxdfForAllMeshes(bxdf8);
   mGlass.setBxdfForAllMeshes(bxdf9);
   //sphere.setNormalMapForAllMeshes(blockNormal);
   sphere3.setBxdfForAllMeshes(bxdf);
@@ -113,7 +114,7 @@ int main() {
   mGlass.translate({-3, -3, 5});
 
   Model sphere2 = sphere;
-  sphere2.setBxdfForAllMeshes(bxdf);
+  sphere2.setBxdfForAllMeshes(bxdfx);
   sphere2.translate({8, 0, 0});
   Model cube2 = cube;
   cube2.setBxdfForAllMeshes(bxdf);
@@ -136,13 +137,13 @@ int main() {
   scene.addLight(light);
   //scene.addLight(light3);
   //scene.addLight(light4);
-  scene.addLight(envLight);
+  //scene.addLight(envLight);
   //scene.addLight(light2);
-  //scene.addModel(bkg);
-  scene.addModel(bkg2);
+  scene.addModel(bkg);
+  //scene.addModel(bkg2);
   scene.addModel(sphere);
   scene.addModel(sphere2);
-  //scene.addModel(sphere3);
+  scene.addModel(sphere3);
   scene.addModel(cube);
   //scene.addModel(mGlass);
   //scene.addModel(deer);
