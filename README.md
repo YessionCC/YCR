@@ -17,7 +17,7 @@ The program is compiled under Ubuntu 18.04， GCC， C++11
 - Multithreading acceleration
 - SAH-BVH heurisitic acceleration structure
 - Bump mapping
-- Support medium (volume render, both pt and bdpt are supported)
+- Support homogenuous medium (volume render, both pt and bdpt are supported)
 - Support HDR output
 - Supports importing obj files and transform its materials to PBR materials
 - Support lights:
@@ -57,5 +57,5 @@ The program is compiled under Ubuntu 18.04， GCC， C++11
 - 1024 spp, 305s, bdpt, Glass Caustic
 ![bdpt_glass](/present/res_bdpt1024.jpg "bdpt_glass")
 
-- 256 spp, 442s, bdpt, Global fog(bdpt denoise)
-![bdpt_global_fog](/present/res_glfogbdpt256.jpg "bdpt_global_fog")
+- 4096 spp, 40min, bdpt
+![fogbdpt](/present/fogbdpt.jpg "fogbdpt")
