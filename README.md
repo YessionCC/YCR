@@ -7,6 +7,7 @@ YCR stands for **YessionCC Render**\
 The program is compiled under Ubuntu 18.04， GCC， C++11
 
 ## Dependences
+- [GLM](https://github.com/g-truc/glm): used for basic vector operations
 - [ASSIMP](https://www.assimp.org/): used for loading 3D models
 - [yaml-cpp](https://github.com/jbeder/yaml-cpp): used for parsing configuration(this function has not been implemented yet)
 - OpenCV: just used for presenting render process
@@ -48,7 +49,7 @@ The program is compiled under Ubuntu 18.04， GCC， C++11
 - 1024 spp, 205s, pt, Environment light/GGX/Specular/Lambertain
 ![Ball](/present/ball.jpg "Ball")
 
-- 4096 spp, 40min, pt, Specular/Glass
+- 1024 spp, 231s, pt, SphereLight/Plastic
 ![Scene](/present/scene.jpg "Scene")
 
 - 4096 spp, 25min, pt, Obj model

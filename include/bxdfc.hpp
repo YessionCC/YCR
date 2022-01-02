@@ -36,7 +36,7 @@ public:
     AddBXDF(
       new LambertianReflection(base),
       new WeightedBXDF(
-        new GGXReflection(rough, base),
+        new GGXReflection(rough, refl),
         new DielectricFresnelBlender(IOR)
       )
     ){}

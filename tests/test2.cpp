@@ -23,7 +23,7 @@ Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
 //Camera cam(film, {0, 14, 50}, {0, -0.4f, -1});
 //Camera cam(film, {-4,2,0}, {1, -0.3, 0});
 RenderProcShower rShower(film);
-ParallelRenderer pRenderer(scene, cam, new PathIntegrator(8), film, 16384, 12);
+ParallelRenderer pRenderer(scene, cam, new PathIntegrator(8), film, 1024, 12);
 
 int main() {
   glm::vec3 vtxsl[3] = {{-8,6,0}, {-8,7,0}, {-8,6,1}};
@@ -77,18 +77,19 @@ int main() {
   BXDF* bxdf7 = new GGXReflection(new SolidTexture(0.002f), imgtex);
   BXDF* bxdf9 = new GGXTransimission(1.4f, new SolidTexture(0.01f), new SolidTexture(1.0f));
   BXDFNode* bxdf8 = new StandardSpecular(1.4f, new SolidTexture(glm::vec3(0.8f,0.0f,0.0f)), new SolidTexture(1.0f));
-  BXDFNode* bxdfx = new StandardGGXRefl(1.45f, new SolidTexture(0.002f), new SolidTexture(glm::vec3(0.0f, 0.8f, 0.0f)), new SolidTexture(1.0f));
+  BXDFNode* bxdfx = new StandardGGXRefl(1.45f, new SolidTexture(0.002f), new SolidTexture(glm::vec3(0.0f, 0.4f, 0.0f)), new SolidTexture(1.0f));
+  BXDFNode* bxdfx2 = new StandardGGXRefl(1.45f, new SolidTexture(0.002f), imgtex2, new SolidTexture(1.0f));
 
   BXDFNode* bxdfc = new MixedBXDF(bxdf4, 
     new PerfectTransimission(new SolidTexture(1.0f), 1.4f), new FixBlender(0.5f));
   
   bkg.setBxdfForAllMeshes(bxdf5);
-  bkg2.setBxdfForAllMeshes(bxdf6);//
+  bkg2.setBxdfForAllMeshes(bxdf7);//
   sphere.setBxdfForAllMeshes(bxdf8);
   mGlass.setBxdfForAllMeshes(bxdf9);
   //sphere.setNormalMapForAllMeshes(blockNormal);
   sphere3.setBxdfForAllMeshes(bxdf);
-  cube.setBxdfForAllMeshes(bxdf5);
+  cube.setBxdfForAllMeshes(bxdfx2);
   nano.setBxdfForAllMeshes(bxdf);
   deer.setBxdfForAllMeshes(bxdf7);
   deer.scale(glm::vec3(1e-2f));
@@ -116,6 +117,10 @@ int main() {
   Model sphere2 = sphere;
   sphere2.setBxdfForAllMeshes(bxdfx);
   sphere2.translate({8, 0, 0});
+  Model sphere4 = sphere3;
+  sphere4.setBxdfForAllMeshes(nullptr);
+  sphere4.translate({4, 0, 0});
+  Light* lgt3 = new ShapeLight(new SolidTexture(1.5f), sphere4);
   Model cube2 = cube;
   cube2.setBxdfForAllMeshes(bxdf);
   cube2.scale(glm::vec3(500, 500, 500));
@@ -134,12 +139,12 @@ int main() {
   //scene.addGlobalMedium(medium);
   //scene.addModel(nano);
   //scene.addModel(casa);
-  scene.addLight(light);
-  //scene.addLight(light3);
+  //scene.addLight(light);
+  scene.addLight(lgt3);
   //scene.addLight(light4);
-  //scene.addLight(envLight);
+  scene.addLight(envLight);
   //scene.addLight(light2);
-  scene.addModel(bkg);
+  scene.addModel(bkg2);
   //scene.addModel(bkg2);
   scene.addModel(sphere);
   scene.addModel(sphere2);
