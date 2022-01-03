@@ -77,5 +77,4 @@ public:
 
   inline int getReX() const {return resolutionX;}
   inline int getReY() const {return resolutionY;}
-
 };

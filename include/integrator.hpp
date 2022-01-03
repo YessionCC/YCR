@@ -15,7 +15,7 @@ private:
 public:
   virtual ~Integrator() {}
   virtual void render(
-    const Scene& scene, RayGenerator& rayGen, Film& film) const = 0;
+    const Scene& scene, RayGenerator* rayGen, Film& film) const = 0;
 
   static void setTransportMode(TransportMode tmode);
   static TransportMode getTransportMode();

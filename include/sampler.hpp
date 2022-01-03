@@ -34,6 +34,11 @@ public:
 
 };
 
+class HaltonSampler2D {
+public:
+  glm::vec2 get2(int sp_index);
+};
+
 class GeneralSampler {
 private:
   std::default_random_engine eng;

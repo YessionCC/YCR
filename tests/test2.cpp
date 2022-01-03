@@ -23,7 +23,7 @@ Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
 //Camera cam(film, {0, 14, 50}, {0, -0.4f, -1});
 //Camera cam(film, {-4,2,0}, {1, -0.3, 0});
 RenderProcShower rShower(film);
-ParallelRenderer pRenderer(scene, cam, new PathIntegrator(8), film, 1024, 12);
+ProgressiveRenderer pRenderer(scene, cam, new PathIntegrator(8), film, 12);
 
 int main() {
   glm::vec3 vtxsl[3] = {{-8,6,0}, {-8,7,0}, {-8,6,1}};
@@ -139,7 +139,7 @@ int main() {
   //scene.addGlobalMedium(medium);
   //scene.addModel(nano);
   //scene.addModel(casa);
-  //scene.addLight(light);
+  scene.addLight(light);
   scene.addLight(lgt3);
   //scene.addLight(light4);
   scene.addLight(envLight);
@@ -171,7 +171,7 @@ int main() {
 
   cam.visualizePointCloud(pc, 18, 40);
 
-  rShower.showProc();
+  rShower.showProc(pRenderer, "/home/yession/Code/Cpp/ycr/img/BDPT_RES/res");
   pRenderer.render("/home/yession/Code/Cpp/ycr/img/BDPT_RES/res.jpg");
   rShower.terminate();
   //integrator.visualizeRender(pc, rGen, scene, film);

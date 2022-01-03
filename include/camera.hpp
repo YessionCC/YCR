@@ -67,19 +67,29 @@ public:
 struct Block2D {
   int width, height, offsetX, offsetY;
 };
-
 class RayGenerator {
-private:
+protected:
   const Camera& camera;
-  StratifiedSampler2D sp2d;
   Block2D curRenderBlock;
+public:
+  RayGenerator(const Camera& cam): camera(cam),
+    curRenderBlock({cam.getReX(), cam.getReY(), 0, 0}) {}
+  ~RayGenerator() {}
+  virtual bool genNextRay(Ray& ray, glm::vec2& rasterPos) = 0;
+
+  inline glm::vec3 getCamPos() const {return camera.getPosition();}
+  inline glm::vec2 world2raster(glm::vec3 wp) const {return camera.world2raster(wp);}
+};
+
+class StractifiedRGen:public RayGenerator {
+private:
+  StratifiedSampler2D sp2d;
   int spp, cntx, cnty, cntspp;
 
 public:
   //spp must a squre number
-  RayGenerator(const Camera& cam, int _spp):
-    camera(cam), sp2d(glm::sqrt(_spp)), 
-    curRenderBlock({cam.getReX(), cam.getReY(), 0, 0}),
+  StractifiedRGen(const Camera& cam, int _spp): 
+    RayGenerator(cam), sp2d(glm::sqrt(_spp)), 
     spp(_spp), cntx(0), cnty(0), cntspp(0){}
 
   void reset(const Block2D renderBlock) {
@@ -87,9 +97,6 @@ public:
     cntx = cnty = cntspp = 0;
     sp2d.clear();
   }
-
-  inline glm::vec3 getCamPos() const {return camera.getPosition();}
-  inline glm::vec2 world2raster(glm::vec3 wp) const {return camera.world2raster(wp);}
 
   bool genNextRay(Ray& ray, glm::vec2& rasterPos) {
     if(cntx >= curRenderBlock.width || 
@@ -124,5 +131,41 @@ public:
       }
     }
     return true;
+  }
+};
+
+
+class HaltonRGen: public RayGenerator {
+private:
+  int cntx, cnty;
+  glm::vec2 hspRasPos;
+  HaltonSampler2D hsp2d;
+public:
+  HaltonRGen(const Camera& cam): RayGenerator(cam), cntx(0), cnty(0){}
+  
+  bool genNextRay(Ray& ray, glm::vec2& rasterPos) {
+    if(cntx >= curRenderBlock.width || 
+       cnty >= curRenderBlock.height) return false;
+
+    int offx = cntx+curRenderBlock.offsetX;
+    int offy = cnty+curRenderBlock.offsetY;
+    rasterPos = hspRasPos+glm::vec2(offx, offy);
+    if(rasterPos.x >= offx+1) 
+      rasterPos.x=std::nextafter(rasterPos.x, rasterPos.x-1);
+    if(rasterPos.y >= offy+1) 
+      rasterPos.y=std::nextafter(rasterPos.y, rasterPos.y-1);
+
+    camera.generateRay(ray, rasterPos);
+    cntx++;
+    if(cntx>=curRenderBlock.width) {
+      cntx = 0;
+      cnty++;
+    }
+    return true;
+  }
+
+  void reset(int index) {
+    cntx = cnty = 0;
+    hspRasPos = hsp2d.get2(index);
   }
 };

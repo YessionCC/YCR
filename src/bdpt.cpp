@@ -384,10 +384,10 @@ float BDPT_MIS(const Scene& scene,
 
 
 void BDPTIntegrator::render(
-  const Scene& scene, RayGenerator& rayGen, Film& film) const{
+  const Scene& scene, RayGenerator* rayGen, Film& film) const{
   //std::lock_guard<std::mutex> lock(locker);
   PathVertex solidCamVtx;
-  solidCamVtx.itsc.itscVtx.position = rayGen.getCamPos();
+  solidCamVtx.itsc.itscVtx.position = rayGen->getCamPos();
   solidCamVtx.beta = glm::vec3(1.0f);
   solidCamVtx.fwdPdf = 1.0f;
   const Medium* globalMedium = scene.getGlobalMedium();
@@ -401,7 +401,7 @@ void BDPTIntegrator::render(
   std::vector<PathVertex>& psCam = subpathGen.pathVerticesCam;
   std::vector<PathVertex>& psLt = subpathGen.pathVerticesLt;
 
-  while(rayGen.genNextRay(camStartRay, camRasPos)) {
+  while(rayGen->genNextRay(camStartRay, camRasPos)) {
     if((int)camRasPos.x == 200 && (int)camRasPos.y == 545) {
       int debug = 0;
     }
@@ -460,7 +460,7 @@ void BDPTIntegrator::render(
         if(!success) continue;
         float mis = BDPT_MIS(psLt, psCam, i, 0);
         radiance *= mis * psCam[0].beta * psLt[i].beta;
-        ltRasPos = rayGen.world2raster(psLt[i].itsc.itscVtx.position);
+        ltRasPos = rayGen->world2raster(psLt[i].itsc.itscVtx.position);
         CheckRadiance(radiance, ltRasPos);//
         if(film.isValidRasPos(ltRasPos)) {
           film.addSplat(radiance, ltRasPos, true);

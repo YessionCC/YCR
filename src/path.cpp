@@ -112,18 +112,18 @@ inline float estimateDirectLightByBXDF(
 }
 
 void PathIntegrator::render(
-  const Scene& scene, RayGenerator& rayGen, Film& film) const{
+  const Scene& scene, RayGenerator* rayGen, Film& film) const{
   if(scene.hasMediumInScene()) render_with_medium(scene, rayGen, film);
   else render_no_medium(scene, rayGen, film);
 }
 
 // no medium
 void PathIntegrator::render_no_medium(
-  const Scene& scene, RayGenerator& rayGen, Film& film) const {
+  const Scene& scene, RayGenerator* rayGen, Film& film) const {
   
   Ray startRay; glm::vec2 rasPos;
   
-  while(rayGen.genNextRay(startRay, rasPos)) {
+  while(rayGen->genNextRay(startRay, rasPos)) {
     glm::vec3 beta(1.0f), L(0.0f);
     
     Ray ray_cur = startRay, ray_lst;
@@ -221,11 +221,11 @@ void PathIntegrator::render_no_medium(
 
 // has volume
 void PathIntegrator::render_with_medium(
-  const Scene& scene, RayGenerator& rayGen, Film& film) const {
+  const Scene& scene, RayGenerator* rayGen, Film& film) const {
   
   Ray startRay; glm::vec2 rasPos;
 
-  while(rayGen.genNextRay(startRay, rasPos)) {
+  while(rayGen->genNextRay(startRay, rasPos)) {
 
     glm::vec3 beta(1.0f), L(0.0f);
     Intersection itsc;

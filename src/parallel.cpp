@@ -4,33 +4,47 @@
 #include <cstdio>
 #include <chrono>
 
-ParallelRenderThread::ParallelRenderThread(
+NonProgressiveRenderThread::NonProgressiveRenderThread(
   const Scene& scene, const Integrator* integrator, 
-  const Camera& cam, ParallelRenderer& pMan, Film& film, int spp): 
-  film(film), scene(scene), integrator(integrator), pMan(pMan), rayGen(cam, spp){}
+  const Camera& cam, NonProgressiveRenderer& pMan, Film& film, int spp): 
+  RenderThread(scene, integrator, film), pMan(pMan), rayGen(cam, spp){}
 
-void ParallelRenderThread::render(){
+void NonProgressiveRenderThread::render(){
   Block2D curBlock;
   while(pMan.getOneBlock(curBlock)) {
     rayGen.reset(curBlock);
-    integrator->render(scene, rayGen, film);
+    integrator->render(scene, &rayGen, film);
+  }
+} 
+
+ProgressiveRenderThread::ProgressiveRenderThread(
+  const Scene& scene, const Integrator* integrator, 
+  const Camera& cam, ProgressiveRenderer& pMan, Film& film, int totth, int thidx): 
+  RenderThread(scene, integrator, film), pMan(pMan), rayGen(cam), 
+  tot_thread_num(totth), thread_idx(thidx), cur_spp(0){}
+
+void ProgressiveRenderThread::render(){
+  while(true) {
+    rayGen.reset(tot_thread_num*cur_spp+thread_idx);
+    integrator->render(scene, &rayGen, film);
+    cur_spp++;
   }
 } 
 
 
-
-ParallelRenderer::ParallelRenderer(
+NonProgressiveRenderer::NonProgressiveRenderer(
   const Scene& scene, const Camera& cam, const Integrator* integrator,
-  Film& film, int spp, int threadNum):
-  film(film), filmX(cam.getReX()), filmY(cam.getReY()), 
-  spp(spp), threadNum(threadNum){
+  Film& film, int spp, int threadNum, int expectCalculation): 
+  ParallelRenderer(film, threadNum),
+  filmX(cam.getReX()), filmY(cam.getReY()), spp(spp), 
+  expectCalculation(expectCalculation){
 
   for(int i = 0; i<threadNum; i++) {
-    pRenders.emplace_back(ParallelRenderThread(scene, integrator, cam, *this, film, spp));
+    pRenders.emplace_back(NonProgressiveRenderThread(scene, integrator, cam, *this, film, spp));
   }
 }
 
-bool ParallelRenderer::calcBlocks(int expectCalculation) {
+bool NonProgressiveRenderer::calcBlocks(int expectCalculation) {
   if(threadNum == 1) {
     rBlocks.push(Block2D{filmX, filmY, 0, 0});
     return true;
@@ -70,7 +84,7 @@ bool ParallelRenderer::calcBlocks(int expectCalculation) {
   return true;
 }
 
-bool ParallelRenderer::getOneBlock(Block2D& block) {
+bool NonProgressiveRenderer::getOneBlock(Block2D& block) {
   std::lock_guard<std::mutex> lock(locker);
   if(rBlocks.empty()) return false;
   block = rBlocks.front();
@@ -79,14 +93,18 @@ bool ParallelRenderer::getOneBlock(Block2D& block) {
   return true;
 }
 
-void ParallelRenderer::render(const char* outputDir, int expectCalculation) {
+void NonProgressiveRenderer::render(const char* outputDir) {
   if(!calcBlocks(expectCalculation)) {
     std::cout<<"Block calc failed, render terminated!"<<std::endl;
     return;
   }
   auto startTime = std::chrono::system_clock::now();
   for(int i = 0; i<threadNum-1; i++) {
-    renderThreads.push_back(new std::thread(&ParallelRenderThread::render, pRenders[i]));
+    //!! NOTICE: When transfer params with ref(&), the thread will always
+    // use its value(copy) as the param (no matter whether the func take ref as param or not)
+    // it will cause the params used in thread are not related what expected
+    // use std::ref to ensure the params transfering as ref(&)
+    renderThreads.push_back(new std::thread(&NonProgressiveRenderThread::render, std::ref(pRenders[i])));
   }
   pRenders.back().render();
   for(int i = 0; i<threadNum-1; i++) {
@@ -97,3 +115,22 @@ void ParallelRenderer::render(const char* outputDir, int expectCalculation) {
   auto usedTime = std::chrono::duration<double>(endTime - startTime);
   std::cout<<"Render complete in "<<usedTime.count()<<"s"<<std::endl;
 } 
+
+
+ProgressiveRenderer::ProgressiveRenderer(
+  const Scene& scene, const Camera& cam, 
+  const Integrator* integrator,
+  Film& film, int threadNum): ParallelRenderer(film, threadNum) {
+
+  for(int i = 0; i<threadNum; i++) {
+    pRenders.emplace_back(ProgressiveRenderThread(scene, integrator, cam, *this, film, threadNum, i));
+  }
+}
+
+void ProgressiveRenderer::render(const char* outputDir) {
+  
+  for(int i = 0; i<threadNum-1; i++) {
+    renderThreads.push_back(new std::thread(&ProgressiveRenderThread::render, std::ref(pRenders[i])));
+  }
+  pRenders.back().render();
+}

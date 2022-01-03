@@ -66,5 +66,5 @@ private:
 
 public:
   BDPTIntegrator(int max_sub_bounce = 6): max_sub_path_bounce(max_sub_bounce) {}
-  void render(const Scene& scene, RayGenerator& rayGen, Film& film) const;
+  void render(const Scene& scene, RayGenerator* rayGen, Film& film) const;
 };
