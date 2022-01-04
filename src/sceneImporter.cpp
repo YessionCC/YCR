@@ -74,18 +74,24 @@ Mesh* SceneImporter::processMesh(const aiScene *scene, aiMesh *mesh) {
       vertex->uv = vec;
       // tangent
       vector.x = mesh->mTangents[i].x;
+      if(std::isnan(vector.x)) vector.x = 0.0f;
       vector.y = mesh->mTangents[i].y;
+      if(std::isnan(vector.y)) vector.y = 0.0f;
       vector.z = mesh->mTangents[i].z;
-      vertex->tangent = glm::normalize(vector);
+      if(std::isnan(vector.z)) vector.z = 0.0f;
+      if(!IsBlack(vector))
+        vertex->tangent = glm::normalize(vector);
       // bitangent
       vector.x = mesh->mBitangents[i].x;
+      if(std::isnan(vector.x)) vector.x = 0.0f;
       vector.y = mesh->mBitangents[i].y;
+      if(std::isnan(vector.y)) vector.y = 0.0f;
       vector.z = mesh->mBitangents[i].z;
-      vertex->btangent = glm::normalize(vector);
+      if(std::isnan(vector.z)) vector.z = 0.0f;
+      if(!IsBlack(vector))
+        vertex->btangent = glm::normalize(vector);
     }
-    else
-      vertex->uv = glm::vec2(0.0f, 0.0f);
-
+      
     modelMesh->vertices[i] = vertex;
   }
   for(unsigned int i = 0; i < mesh->mNumFaces; i++) {

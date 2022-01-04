@@ -17,11 +17,11 @@
 PCShower pc;
 Scene scene;
 Film film(800, 800, 60, true);
-Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
+//Camera cam(film, {0, 0, 14}, {0, -0.4f, -1});
 //Camera cam(film, {0, 6, 14}, {0, -0.45f, -1});
 //Camera cam(film, {0, 14, 35}, {0, -0.4f, -1});
 //Camera cam(film, {0, 14, 50}, {0, -0.4f, -1});
-//Camera cam(film, {-4,2,0}, {1, -0.3, 0});
+Camera cam(film, {-4,2,0}, {1, -0.3, 0});
 RenderProcShower rShower(film);
 ProgressiveRenderer pRenderer(scene, cam, new PathIntegrator(8), film, 12);
 
@@ -35,7 +35,7 @@ int main() {
   glm::vec3 vtxs6[4] = {{0,0,0}, {5,0,2}, {0,5,0}};
 
   Model nano("/home/yession/Code/Cpp/ycr/models/Nanosuit/nanosuit.obj");
-  //Model casa("/home/yession/下载/casa2.obj");
+  Model casa("/home/yession/下载/casa2.obj");
   Model deer("/home/yession/Code/Cpp/ycr/models/Deer/deer.obj");
   Model cube("/home/yession/Code/Cpp/ycr/models/Cube/cube.obj");
   Model sphere(CustomMesh::CreateSphere(glm::vec3(-4, -4, 1.2f), 3));
@@ -139,18 +139,18 @@ int main() {
   //scene.addGlobalMedium(medium);
   //scene.addModel(nano);
   //scene.addModel(casa);
-  scene.addLight(light);
-  scene.addLight(lgt3);
+  //scene.addLight(light);
+  // scene.addLight(lgt3);
   //scene.addLight(light4);
-  scene.addLight(envLight);
+  scene.addLight(envLight2);
   //scene.addLight(light2);
-  scene.addModel(bkg2);
+  // scene.addModel(bkg2);
   //scene.addModel(bkg2);
-  scene.addModel(sphere);
-  scene.addModel(sphere2);
-  scene.addModel(sphere3);
-  scene.addModel(cube);
-  //scene.addModel(mGlass);
+  // scene.addModel(sphere);
+  // scene.addModel(sphere2);
+  // scene.addModel(sphere3);
+  // scene.addModel(cube);
+  scene.addModel(casa);
   //scene.addModel(deer);
   //scene.addMedium(medium, true);
   // scene.addModel(cube2);

@@ -18,8 +18,8 @@ public:
   glm::vec3 tangent;
   glm::vec3 btangent;
 
-  Vertex() {}
-  Vertex(glm::vec3 pos):position(pos) {}
+  Vertex():position(0.0f), uv(0.0f), normal(0.0f), tangent(0.0f), btangent(0.0f) {}
+  Vertex(glm::vec3 pos):position(pos), uv(0.0f), normal(0.0f), tangent(0.0f), btangent(0.0f) {}
 
   void transform(const glm::mat4x4& trans) {
     glm::mat3x3 nTrans = glm::transpose(glm::inverse(glm::mat3x3(trans)));

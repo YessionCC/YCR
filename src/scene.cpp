@@ -8,7 +8,9 @@ Scene::~Scene() {
 }
 
 void Scene::init() {
+  std::cout<<"Build BVH"<<std::endl;
   buildBVH();
+  std::cout<<"Build BVH complete"<<std::endl;
   if(lights.size()>0) calcLightDistribution();
   else std::cout<<"Warning: No Lights!"<<std::endl;
 }

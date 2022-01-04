@@ -28,6 +28,16 @@ inline bool Refract(glm::vec3 dir_o, glm::vec3 normal,
   }
 }
 
+// d has normalized and not zero
+inline void getXYAxis(const glm::vec3& d, glm::vec3& x, glm::vec3& y) {
+  glm::vec3 dd = glm::abs(d);
+  if(dd.x<dd.y && dd.x<dd.z) x = glm::vec3(0, -d.z, d.y);
+  else if(dd.y<dd.z) x = glm::vec3(-d.z, 0, d.x);
+  else x = glm::vec3(-d.y, d.x, 0);
+  x = glm::normalize(x);
+  y = glm::cross(x, d);
+}
+
 inline float dist2(glm::vec3 vec) {
   return vec.x*vec.x+vec.y*vec.y+vec.z*vec.z;
 }

@@ -1,6 +1,7 @@
 #include "primitive.hpp"
 
 #include "model.hpp"
+#include "utility.hpp"
 #include "sampler.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -98,11 +99,17 @@ void Triangle::handleItscResult(Intersection& itsc) const{ // for triangle
   
   // notice: normal/tangent interpolation need to be normalized!
   itsc.itscVtx.normal = glm::normalize(BLEND(normal));
-  itsc.itscVtx.tangent = glm::normalize(BLEND(tangent));
-  itsc.itscVtx.btangent = glm::cross(itsc.itscVtx.tangent, itsc.itscVtx.normal);
-  itsc.itscVtx.uv = BLEND(uv); // real uv for map
+  glm::vec3 blend_tan = BLEND(tangent);
+  if(IsBlack(blend_tan)) {// if no tangent, must no btangent
+    getXYAxis(itsc.itscVtx.normal, itsc.itscVtx.tangent, itsc.itscVtx.btangent);
+    itsc.itscVtx.uv = glm::vec2(0.0f);
+  }
+  else {
+    itsc.itscVtx.tangent = glm::normalize(blend_tan);
+    itsc.itscVtx.btangent = glm::cross(itsc.itscVtx.tangent, itsc.itscVtx.normal);
+    itsc.itscVtx.uv = BLEND(uv); // real uv for map
+  }
   itsc.itscVtx.position = BLEND(position);
-  
   #undef BLEND
 
   // we assume that u,v,w, normal are all exact(ignore their numerical error)

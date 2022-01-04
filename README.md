@@ -52,8 +52,8 @@ The program is compiled under Ubuntu 18.04， GCC， C++11
 - 1024 spp, 231s, pt, SphereLight/Plastic
 ![Scene](/present/scene.jpg "Scene")
 
-- 4096 spp, 25min, pt, Obj model
-![Nano](/present/nano.jpg "Nano")
+- 3000 spp, 1h, pt, Obj model, Lambertain/Specular
+![Casa](/present/casa.jpg "Casa")
 
 - 1024 spp, 305s, bdpt, Glass Caustic
 ![bdpt_glass](/present/res_bdpt1024.jpg "bdpt_glass")
