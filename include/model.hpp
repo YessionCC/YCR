@@ -34,6 +34,11 @@ public:
   void addMesh(Mesh* mesh);
 
   void setBxdfForAllMeshes(const BXDFNode* bxdfNode);
+  void setBxdfForOneMesh(const BXDFNode* bxdfNode, int index);
+  void setBxdfForMeshes(const BXDFNode* bxdfNode, std::vector<int> idxs);
+  // include s and e
+  void setBxdfForRangeMeshes(const BXDFNode* bxdfNode, int s, int e);
+
   void setLightForAllMeshes(const Light* light);
   void setMediumForAllMeshes(const Medium* medium, bool isInside = true);
   void setNormalMapForAllMeshes(const Texture* tex);

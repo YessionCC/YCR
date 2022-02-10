@@ -73,6 +73,20 @@ void Model::setBxdfForAllMeshes(const BXDFNode* bxdfNode) {
   for(Mesh* mesh: meshes) mesh->material.bxdfNode = bxdfNode;
 }
 
+void Model::setBxdfForOneMesh(const BXDFNode* bxdfNode, int index) {
+  meshes.at(index)->material.bxdfNode = bxdfNode;
+}
+
+void Model::setBxdfForMeshes(const BXDFNode* bxdfNode, std::vector<int> idxs) {
+  for(int idx: idxs)
+    meshes.at(idx)->material.bxdfNode = bxdfNode;
+}
+
+void Model::setBxdfForRangeMeshes(const BXDFNode* bxdfNode, int s, int e) {
+  for(int i = s; i<=e; i++)
+    meshes.at(i)->material.bxdfNode = bxdfNode;
+}
+
 void Model::setLightForAllMeshes(const Light* light) {
   for(Mesh* mesh: meshes) mesh->material.light = light;
 }

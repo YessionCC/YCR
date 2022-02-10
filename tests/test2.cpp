@@ -23,7 +23,7 @@ Film film(800, 800, 60, true);
 //Camera cam(film, {0, 14, 50}, {0, -0.4f, -1});
 Camera cam(film, {-4,2,0}, {1, -0.3, 0});
 RenderProcShower rShower(film);
-ProgressiveRenderer pRenderer(scene, cam, new PathIntegrator(8), film, 12);
+ProgressiveRenderer pRenderer(scene, cam, new PathIntegrator(6), film, 12);
 
 int main() {
   glm::vec3 vtxsl[3] = {{-8,6,0}, {-8,7,0}, {-8,6,1}};
@@ -55,7 +55,7 @@ int main() {
   EnvironmentLight* envLight2 = 
     new EnvironmentLight(
       new SolidTexture(1.0f));
-  Light* light = new ShapeLight(new SolidTexture(800.0f), lgt);
+  Light* light = new ShapeLight(new SolidTexture(400.0f), lgt);
   Light* light2 = new ShapeLight(new SolidTexture(800.0f), lgt2);
   Light* pLight = new PointLight(glm::vec3(1000), glm::vec3(6,6,6));
   Light* dLight = new DirectionalLight(glm::vec3(3), glm::vec3(0,-1,0));
@@ -77,7 +77,7 @@ int main() {
   BXDF* bxdf7 = new GGXReflection(new SolidTexture(0.002f), imgtex);
   BXDF* bxdf9 = new GGXTransimission(1.4f, new SolidTexture(0.01f), new SolidTexture(1.0f));
   BXDFNode* bxdf8 = new StandardSpecular(1.4f, new SolidTexture(glm::vec3(0.8f,0.0f,0.0f)), new SolidTexture(1.0f));
-  BXDFNode* bxdfx = new StandardGGXRefl(1.45f, new SolidTexture(0.002f), new SolidTexture(glm::vec3(0.0f, 0.4f, 0.0f)), new SolidTexture(1.0f));
+  BXDFNode* bxdfx = new StandardGGXRefl(1.45f, new SolidTexture(0.04f), new SolidTexture(glm::vec3(0.4f, 0.4f, 0.4f)), new SolidTexture(1.0f));
   BXDFNode* bxdfx2 = new StandardGGXRefl(1.45f, new SolidTexture(0.002f), imgtex2, new SolidTexture(1.0f));
 
   BXDFNode* bxdfc = new MixedBXDF(bxdf4, 
@@ -127,7 +127,7 @@ int main() {
   cube2.translate({16,25,20});
   // sphere.scale(glm::vec3(1.5));
   // sphere.translate(glm::vec3(-1, 14, 0));
-
+  casa.setBxdfForAllMeshes(bxdfx);
 
   //Light* light3 = new ShapeLight(new SolidTexture({0.2, 0.2, 0.8}), sphere3);
   //Light* light4 = new ShapeLight(new SolidTexture({0.8, 0.2, 0.2}), sphere2);
@@ -139,10 +139,10 @@ int main() {
   //scene.addGlobalMedium(medium);
   //scene.addModel(nano);
   //scene.addModel(casa);
-  //scene.addLight(light);
+  scene.addLight(light);
   // scene.addLight(lgt3);
   //scene.addLight(light4);
-  scene.addLight(envLight2);
+  //scene.addLight(envLight);
   //scene.addLight(light2);
   // scene.addModel(bkg2);
   //scene.addModel(bkg2);

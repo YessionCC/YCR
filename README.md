@@ -52,7 +52,7 @@ The program is compiled under Ubuntu 18.04， GCC， C++11
 - 1024 spp, 231s, pt, SphereLight/Plastic
 ![Scene](/present/scene.jpg "Scene")
 
-- 3000 spp, 1h, pt, Obj model, Lambertain/Specular
+- 3000 spp, 2.5h, pt, Obj model
 ![Casa](/present/casa.jpg "Casa")
 
 - 1024 spp, 305s, bdpt, Glass Caustic

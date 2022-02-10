@@ -15,7 +15,7 @@ aux_source_directory(${PROJECT_SOURCE_DIR}/src CPP_SRCS)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin) 
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
-set(EXE_FILE test2)
+set(EXE_FILE test3)
 add_library(ycr SHARED ${CPP_SRCS})
 add_executable(${EXE_FILE} ${PROJECT_SOURCE_DIR}/tests/${EXE_FILE}.cpp)
 

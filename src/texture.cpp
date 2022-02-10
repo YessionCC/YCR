@@ -34,6 +34,7 @@ glm::vec3 ImageTexture::getPixel(int x, int y) const{
 }
 
 glm::vec3 ImageTexture::tex2D(glm::vec2 uv) const{
+  uv = glm::abs(uv); // in case of error uv
   uv = uv*scale+offset;
   uv.x = uv.x - (int)uv.x;
   uv.y = uv.y - (int)uv.y;

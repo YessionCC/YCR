@@ -44,6 +44,8 @@ void Film::addRadiance(glm::vec3 L, float weight, int px, int py, bool sumMode) 
 }
 
 void Film::addSplat(glm::vec3 L, glm::vec2 center, bool sumMode) {
+  float ml = std::max(L.x, std::max(L.y, L.z));
+  if(ml > 10) L *= 10.0/ml;
   if(fradius == 0.0f) {
     int x = (int)center.x, y = (int)center.y;
     addRadiance(L, filter->evaluate(center-glm::vec2(x+0.5f, y+0.5f)), x, y, sumMode);
